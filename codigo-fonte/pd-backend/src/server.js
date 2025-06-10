@@ -1,16 +1,20 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import userRoutes from './routes/user.routes.js';
-import documentRoutes from './routes/document.routes.js';
-
-dotenv.config();
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
 const app = express();
+
+const authRoutes = require("./src/routes/auth.routes");
+
 app.use(cors());
 app.use(express.json());
 
-app.use('/api/users', userRoutes);
-app.use('/api/documents', documentRoutes);
+// Rotas
+app.use("/api/auth", authRoutes);
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}🚀`));
+// Teste
+app.get("/", (req, res) => {
+  res.send("PD Nilfisk backend funcionando!");
+});
+
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));

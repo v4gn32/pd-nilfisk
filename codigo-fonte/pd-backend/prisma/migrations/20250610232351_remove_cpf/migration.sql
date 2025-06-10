@@ -1,10 +1,18 @@
+-- CreateEnum
+CREATE TYPE "Role" AS ENUM ('ADMIN', 'COMMON');
+
+-- CreateEnum
+CREATE TYPE "DocumentType" AS ENUM ('HOLERITE', 'FERIAS', 'COMISSAO', 'INFORME_RENDIMENTO');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
-    "role" TEXT NOT NULL DEFAULT 'COMMON',
+    "role" "Role" NOT NULL DEFAULT 'COMMON',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -12,13 +20,13 @@ CREATE TABLE "User" (
 -- CreateTable
 CREATE TABLE "Document" (
     "id" SERIAL NOT NULL,
-    "type" TEXT NOT NULL,
-    "month" INTEGER NOT NULL,
-    "year" INTEGER NOT NULL,
+    "type" "DocumentType" NOT NULL,
     "filename" TEXT NOT NULL,
     "url" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "month" INTEGER NOT NULL,
+    "year" INTEGER NOT NULL,
     "userId" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Document_pkey" PRIMARY KEY ("id")
 );
