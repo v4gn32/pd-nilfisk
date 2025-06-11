@@ -26,4 +26,13 @@ router.post(
   documentController.uploadDocument
 );
 
+// 📤 Upload em massa de holerites (PDF com várias páginas)
+router.post(
+  '/bulk-holerites',
+  authenticate,
+  isAdmin,
+  upload.single('file'),
+  documentController.uploadBulkPayslips
+);
+
 module.exports = router;
