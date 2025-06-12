@@ -4,6 +4,8 @@ const path = require("path");
 const fs = require("fs");
 const pdfParse = require("pdf-parse");
 const { PDFDocument } = require("pdf-lib");
+const { sendNewDocumentEmail } = require('../services/emailService');
+
 
 // 🔤 Função para padronizar nomes (remove acentos, quebra de linha e deixa em caixa alta)
 const normalize = (str) =>
@@ -117,6 +119,20 @@ exports.uploadBulkPayslips = async (req, res) => {
         },
       });
 
+      // ✉️ Envia e-mail para o colaborador
+      try {
+        await sendNewDocumentEmail(
+          matchedUser.email,
+          matchedUser.name,
+          "HOLERITE",
+          month,
+          year
+        );
+        console.log(`📧 E-mail enviado para ${matchedUser.email}`);
+      } catch (emailErr) {
+        console.warn(`⚠️ Falha ao enviar e-mail para ${matchedUser.email}:`, emailErr.message);
+      }
+
       processed++;
       console.log(`✅ Página ${i + 1} vinculada a ${matchedUser.name}`);
     }
@@ -127,3 +143,117 @@ exports.uploadBulkPayslips = async (req, res) => {
     res.status(500).json({ error: "Erro interno no servidor" });
   }
 };
+
+
+exports.getMyDocuments = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { type, month, year } = req.query;
+
+    const where = { userId };
+
+    if (type) where.type = type;
+    if (month) where.month = parseInt(month);
+    if (year) where.year = parseInt(year);
+
+    const documents = await prisma.document.findMany({
+      where,
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json(documents);
+  } catch (error) {
+    console.error("Erro ao listar documentos do usuário:", error);
+    res.status(500).json({ error: "Erro interno no servidor" });
+  }
+};
+
+exports.getAllDocuments = async (req, res) => {
+  try {
+    const { type, month, year } = req.query;
+
+    const where = {};
+
+    if (type) where.type = type;
+    if (month) where.month = parseInt(month);
+    if (year) where.year = parseInt(year);
+
+    const documents = await prisma.document.findMany({
+      where,
+      include: {
+        user: {
+          select: { id: true, name: true, email: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json(documents);
+  } catch (error) {
+    console.error("Erro ao listar documentos:", error);
+    res.status(500).json({ error: "Erro interno no servidor" });
+  }
+};
+exports.downloadDocument = async (req, res) => {
+  try {
+    const documentId = parseInt(req.params.id);
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      return res.status(404).json({ error: "Documento não encontrado" });
+    }
+
+    // 🔐 Permissão: admin pode tudo, usuário comum só seu próprio documento
+    if (userRole !== 'ADMIN' && document.userId !== userId) {
+      return res.status(403).json({ error: "Acesso negado" });
+    }
+
+    const filePath = path.join(__dirname, '..', 'uploads', document.filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "Arquivo não encontrado no servidor" });
+    }
+
+    res.download(filePath, document.filename); // envia como download
+  } catch (error) {
+    console.error("Erro ao fazer download:", error);
+    res.status(500).json({ error: "Erro interno ao baixar o documento" });
+  }
+};
+
+exports.deleteDocument = async (req, res) => {
+  try {
+    const documentId = parseInt(req.params.id);
+
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      return res.status(404).json({ error: "Documento não encontrado" });
+    }
+
+    // 🧹 Remove o arquivo físico
+    const filePath = path.join(__dirname, '..', 'uploads', document.filename);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    // 🗑️ Remove o registro do banco
+    await prisma.document.delete({
+      where: { id: documentId },
+    });
+
+    res.json({ message: "Documento excluído com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir documento:", error);
+    res.status(500).json({ error: "Erro interno ao excluir documento" });
+  }
+};
+
+

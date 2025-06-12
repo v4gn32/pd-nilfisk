@@ -35,4 +35,14 @@ router.post(
   documentController.uploadBulkPayslips
 );
 
+// Listar documentos do usuário logado
+router.get('/me', authenticate, documentController.getMyDocuments);
+
+// Listar todos os documentos (com filtros) — somente ADMIN
+router.get('/', authenticate, isAdmin, documentController.getAllDocuments);
+
+// ❌ Excluir documento (somente admin)
+router.delete('/:id', authenticate, isAdmin, documentController.deleteDocument);
+
+
 module.exports = router;
