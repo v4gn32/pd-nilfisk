@@ -1,28 +1,35 @@
-require('dotenv').config(); // Carrega as variáveis do .env
+require("dotenv").config(); // Carrega variáveis do .env
 
-const express = require('express');
+const express = require("express");
 const app = express();
-const path = require('path');
+const path = require("path");
+const cors = require("cors");
 
-const authRoutes = require('./src/routes/auth.routes');
-const documentRoutes = require('./src/routes/document.routes');
-const userRoutes = require('./src/routes/user.routes');
+// ✅ Libera requisições do frontend (localhost:5173)
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
-// Middleware apenas onde precisa
-app.use('/api/auth', express.json());
-app.use('/api/users', express.json()); // ✅ necessário para criar usuários via JSON
+// ✅ Middleware para leitura de JSON em todas as rotas (não só auth/users)
+app.use(express.json());
 
-// Linha para servir os arquivos públicos da pasta uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// ✅ Servir arquivos públicos da pasta uploads
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Rotas
-app.use('/api/auth', authRoutes);
-app.use('/api/documents', documentRoutes);
-app.use('/api/users', userRoutes);
+// ✅ Rotas da API
+const authRoutes = require("./src/routes/auth.routes");
+const documentRoutes = require("./src/routes/document.routes");
+const userRoutes = require("./src/routes/user.routes");
 
-// Porta dinâmica
+app.use("/api/auth", authRoutes);
+app.use("/api/documents", documentRoutes);
+app.use("/api/users", userRoutes);
+
+// ✅ Porta do servidor
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}🚀`);
+  console.log(`Servidor rodando na porta ${PORT} 🚀`);
 });
