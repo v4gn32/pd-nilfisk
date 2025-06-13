@@ -5,46 +5,42 @@ import {
   FileSpreadsheet, 
   FileWarning, 
   Download, 
+  Trash,
   Calendar,
   Clock
 } from 'lucide-react';
 import { Document, DocumentType } from '../types';
 import { Card, CardContent } from './ui/Card';
 import Button from './ui/Button';
+import { useAuth } from '../contexts/AuthContext';
 
 interface DocumentCardProps {
   document: Document;
   onDownload: (document: Document) => void;
+  onDelete?: (document: Document) => void; // opcional
 }
 
-const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDownload }) => {
+const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDownload, onDelete }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+
   const getDocumentIcon = (type: DocumentType) => {
     switch (type) {
-      case 'HOLERITE':
-        return <FileText className="text-blue-500" size={24} />;
-      case 'FERIAS':
-        return <FileBadge className="text-green-500" size={24} />;
-      case 'COMISSAO':
-        return <FileSpreadsheet className="text-purple-500" size={24} />;
-      case 'INFORME_RENDIMENTO':
-        return <FileWarning className="text-orange-500" size={24} />;
-      default:
-        return <FileText className="text-gray-500" size={24} />;
+      case 'HOLERITE': return <FileText className="text-blue-500" size={24} />;
+      case 'FERIAS': return <FileBadge className="text-green-500" size={24} />;
+      case 'COMISSAO': return <FileSpreadsheet className="text-purple-500" size={24} />;
+      case 'INFORME_RENDIMENTO': return <FileWarning className="text-orange-500" size={24} />;
+      default: return <FileText className="text-gray-500" size={24} />;
     }
   };
   
   const getDocumentTypeLabel = (type: DocumentType) => {
     switch (type) {
-      case 'HOLERITE':
-        return 'Holerite';
-      case 'FERIAS':
-        return 'Férias';
-      case 'COMISSAO':
-        return 'Comissão';
-      case 'INFORME_RENDIMENTO':
-        return 'Informe de Rendimentos';
-      default:
-        return 'Documento';
+      case 'HOLERITE': return 'Holerite';
+      case 'FERIAS': return 'Férias';
+      case 'COMISSAO': return 'Comissão';
+      case 'INFORME_RENDIMENTO': return 'Informe de Rendimentos';
+      default: return 'Documento';
     }
   };
   
@@ -58,16 +54,11 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDownload }) => 
 
   const getDocumentColor = (type: DocumentType) => {
     switch (type) {
-      case 'HOLERITE':
-        return 'bg-blue-50 border-blue-100';
-      case 'FERIAS':
-        return 'bg-green-50 border-green-100';
-      case 'COMISSAO':
-        return 'bg-purple-50 border-purple-100';
-      case 'INFORME_RENDIMENTO':
-        return 'bg-orange-50 border-orange-100';
-      default:
-        return 'bg-gray-50 border-gray-100';
+      case 'HOLERITE': return 'bg-blue-50 border-blue-100';
+      case 'FERIAS': return 'bg-green-50 border-green-100';
+      case 'COMISSAO': return 'bg-purple-50 border-purple-100';
+      case 'INFORME_RENDIMENTO': return 'bg-orange-50 border-orange-100';
+      default: return 'bg-gray-50 border-gray-100';
     }
   };
   
@@ -84,14 +75,33 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDownload }) => 
               <h3 className="font-medium text-gray-900 truncate">
                 {getDocumentTypeLabel(document.type)}
               </h3>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => onDownload(document)}
-                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-              >
-                <Download size={18} />
-              </Button>
+
+              {/* Ações (Download e Excluir) */}
+              <div className="flex gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => onDownload(document)}
+                  className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                >
+                  <Download size={18} />
+                </Button>
+
+                {isAdmin && onDelete && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      if (confirm('Deseja realmente excluir este documento?')) {
+                        onDelete(document);
+                      }
+                    }}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                  >
+                    <Trash size={18} />
+                  </Button>
+                )}
+              </div>
             </div>
             
             <div className="mt-2 flex flex-col gap-1">
