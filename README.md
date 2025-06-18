@@ -130,7 +130,7 @@ enum Role {
 
 ```env
 DATABASE_URL=postgresql://usuario:senha@host:porta/banco
-JWT_SECRET=supertokenseguro
+JWT_SECRET=supertokenseguro - node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 AWS_ACCESS_KEY_ID=sua_key
 AWS_SECRET_ACCESS_KEY=sua_secret
 AWS_REGION=us-east-1
