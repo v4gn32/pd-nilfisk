@@ -4,9 +4,9 @@ import React, {
   useState,
   useEffect,
   ReactNode,
-} from 'react';
-import api from '../utils/apiClient';
-import { AuthState } from '../types';
+} from "react";
+import api from "../utils/apiClient";
+import { AuthState } from "../types";
 
 // Tipagem do contexto para controle global da autenticação
 interface AuthContextType extends AuthState {
@@ -19,7 +19,9 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Provider que envolverá o App
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
@@ -32,12 +34,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-      const response = await api.post('/login', { email, password });
+      const response = await api.post("/auth/login", { email, password });
       const { token, user } = response.data;
 
       // Armazena token e usuário
-      localStorage.setItem('token', token);
-      localStorage.setItem('auth', JSON.stringify({ user }));
+      localStorage.setItem("token", token);
+      localStorage.setItem("auth", JSON.stringify({ user }));
 
       setAuthState({
         user,
@@ -47,11 +49,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
     } catch (error: unknown) {
       // Tratamento seguro para erros
-      let msg = 'Falha no login';
+      let msg = "Falha no login";
       if (
-        typeof error === 'object' &&
+        typeof error === "object" &&
         error !== null &&
-        'response' in error &&
+        "response" in error &&
         (error as any).response?.data?.error
       ) {
         msg = (error as any).response.data.error;
@@ -70,11 +72,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-      const response = await api.post('/register', { name, email, password });
+      const response = await api.post("/auth/register", {
+        name,
+        email,
+        password,
+      });
       const { token, user } = response.data;
 
-      localStorage.setItem('token', token);
-      localStorage.setItem('auth', JSON.stringify({ user }));
+      localStorage.setItem("token", token);
+      localStorage.setItem("auth", JSON.stringify({ user }));
 
       setAuthState({
         user,
@@ -83,11 +89,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         error: null,
       });
     } catch (error: unknown) {
-      let msg = 'Falha no cadastro';
+      let msg = "Falha no cadastro";
       if (
-        typeof error === 'object' &&
+        typeof error === "object" &&
         error !== null &&
-        'response' in error &&
+        "response" in error &&
         (error as any).response?.data?.error
       ) {
         msg = (error as any).response.data.error;
@@ -104,7 +110,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Executado ao carregar o app - busca perfil se token existir
   useEffect(() => {
     const fetchProfile = async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
 
       if (!token) {
         setAuthState((prev) => ({ ...prev, isLoading: false }));
@@ -112,10 +118,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       try {
-        const response = await api.get('/profile');
+        const response = await api.get("/auth/profile");
         const user = response.data;
 
-        localStorage.setItem('auth', JSON.stringify({ user }));
+        localStorage.setItem("auth", JSON.stringify({ user }));
 
         setAuthState({
           user,
@@ -125,8 +131,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
       } catch {
         // Limpa o localStorage se o token for inválido
-        localStorage.removeItem('auth');
-        localStorage.removeItem('token');
+        localStorage.removeItem("auth");
+        localStorage.removeItem("token");
         setAuthState({
           user: null,
           isAuthenticated: false,
@@ -141,8 +147,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Função de logout
   const logout = () => {
-    localStorage.removeItem('auth');
-    localStorage.removeItem('token');
+    localStorage.removeItem("auth");
+    localStorage.removeItem("token");
     setAuthState({
       user: null,
       isAuthenticated: false,
@@ -162,7 +168,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
