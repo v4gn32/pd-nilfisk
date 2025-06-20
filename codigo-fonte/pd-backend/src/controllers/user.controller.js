@@ -57,3 +57,61 @@ exports.getAllUsers = async (req, res) => {
     res.status(500).json({ error: "Erro interno ao buscar usuários" });
   }
 };
+
+// ✅ Atualizar usuário
+exports.updateUser = async (req, res) => {
+  const { id } = req.params;
+  const { name, email, role } = req.body;
+
+  try {
+    const updated = await prisma.user.update({
+      where: { id: Number(id) },
+      data: { name, email, role },
+    });
+
+    return res.json(updated);
+  } catch (error) {
+    console.error("Erro ao atualizar usuário:", error);
+    return res.status(500).json({ message: "Erro ao atualizar usuário" });
+  }
+};
+
+// ✅ Deletar usuário
+exports.deleteUser = async (req, res) => {
+  const id = parseInt(req.params.id);
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id } });
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+    if (user.email === "admin@nilfisk.com") {
+      return res
+        .status(403)
+        .json({ message: "Esse usuário não pode ser excluído." });
+    }
+
+    // Verifica se o usuário tem documentos vinculados
+    const hasDocuments = await prisma.document.findFirst({
+      where: { userId: id },
+    });
+
+    if (hasDocuments) {
+      return res.status(400).json({
+        message:
+          "Este usuário possui documentos vinculados e não pode ser excluído.",
+      });
+    }
+
+    await prisma.user.delete({ where: { id } });
+
+    return res.status(204).send(); // Sucesso sem conteúdo
+  } catch (error) {
+    console.error("Erro ao excluir usuário:", error);
+    return res
+      .status(500)
+      .json({ message: "Erro interno ao excluir usuário." });
+  }
+};

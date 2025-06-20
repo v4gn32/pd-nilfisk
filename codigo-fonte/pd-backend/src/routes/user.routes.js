@@ -10,4 +10,10 @@ router.post("/", authenticate, isAdmin, userController.createUser);
 // ✅ Obter todos os usuários (admin)
 router.get("/", authenticate, isAdmin, userController.getAllUsers);
 
+// ✅ Atualizar usuário
+router.put("/:id", authenticate, isAdmin, userController.updateUser);
+
+// ✅ Deletar usuário
+router.delete("/:id", authenticate, isAdmin, userController.deleteUser);
+
 module.exports = router;
