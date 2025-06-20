@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:3000/api", // ✅ base raiz da API
+  baseURL: "https://pd-nilfisk-backend.onrender.com/api", // ✅ base raiz da API
 });
 
 // Interceptador para incluir token JWT automaticamente
