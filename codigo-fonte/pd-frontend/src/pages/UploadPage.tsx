@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
-import UploadDocument from "./UploadDocument"; // seu componente já pronto
+import UploadDocument from "./UploadDocument";
 import api from "../utils/apiClient";
 import { User, DocumentType } from "../types";
 
-const UploadPage: React.FC = () => {
+const UploadPage: React.FC<{ onUploadSuccess?: () => void }> = ({
+  onUploadSuccess,
+}) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔄 useEffect para buscar usuários da API
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -23,7 +24,6 @@ const UploadPage: React.FC = () => {
     fetchUsers();
   }, []);
 
-  // 📤 Função para upload
   const handleUploadDocument = async (
     type: DocumentType,
     file: File,
@@ -43,6 +43,8 @@ const UploadPage: React.FC = () => {
         "Content-Type": "multipart/form-data",
       },
     });
+
+    if (onUploadSuccess) onUploadSuccess(); // ✅ dispara atualização
   };
 
   if (loading)
