@@ -5,7 +5,10 @@ const app = express();
 const path = require("path");
 const cors = require("cors");
 
-// ✅ Libera requisições do frontend (localhost:5173)
+// ✅ Servir arquivos públicos da pasta uploads (PDFs)
+app.use("/uploads", express.static(path.join(__dirname, "src", "uploads")));
+
+// ✅ Liberar frontend para conectar com backend
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -13,11 +16,8 @@ app.use(
   })
 );
 
-// ✅ Middleware para leitura de JSON em todas as rotas (não só auth/users)
+// ✅ Middleware para aceitar JSON nas requisições
 app.use(express.json());
-
-// ✅ Servir arquivos públicos da pasta uploads
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ✅ Rotas da API
 const authRoutes = require("./src/routes/auth.routes");
@@ -28,7 +28,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/users", userRoutes);
 
-// ✅ Porta do servidor
+// ✅ Iniciar servidor na porta .env ou 3000
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT} 🚀`);
