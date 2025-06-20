@@ -1,12 +1,17 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
 } from "react-router-dom";
+
+import axios from "axios"; // 📦 IMPORTANTE: instale com `npm install axios`
+
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { UserSettingsProvider } from "./contexts/UserSettingsContext";
+
+// Páginas
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -15,18 +20,16 @@ import Documents from "./pages/Documents";
 import UploadPage from "./pages/UploadPage";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
+
+// Componentes
 import Sidebar from "./components/Sidebar";
-import { mockDocuments, getUserDocuments } from "./data/mockData";
 import { Document } from "./types";
 
-// Layout com Sidebar para rotas autenticadas
+// Layout com sidebar
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { user, logout } = useAuth();
 
-  if (!user) {
-    return <Navigate to="/login" />;
-  }
-
+  if (!user) return <Navigate to="/login" />;
   return (
     <div className="flex h-screen bg-[#EFF0F2]">
       <Sidebar user={user} onLogout={logout} />
@@ -35,7 +38,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Componente de rota protegida
+// Rota protegida com verificação de login e admin
 const ProtectedRoute = ({
   children,
   adminOnly = false,
@@ -53,36 +56,73 @@ const ProtectedRoute = ({
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />;
-  }
-
-  if (adminOnly && user?.role !== "ADMIN") {
-    return <Navigate to="/dashboard" />;
-  }
+  if (!isAuthenticated) return <Navigate to="/login" />;
+  if (adminOnly && user?.role !== "ADMIN") return <Navigate to="/dashboard" />;
 
   return <AppLayout>{children}</AppLayout>;
 };
 
-// Componente principal do App
+// Conteúdo principal
 const AppContent = () => {
   const { user, login, register } = useAuth();
-  const [documents] = useState<Document[]>(mockDocuments);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState<boolean>(true);
 
-  const handleLogin = (email: string, password: string) => {
-    return login(email, password);
-  };
+  // 🔐 Buscar documentos reais da API
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
 
-  const handleRegister = (name: string, email: string, password: string) => {
-    return register(name, email, password);
-  };
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/documents/me`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setDocuments(response.data); // ✅ Documentos vindos do backend
+      } catch (error) {
+        console.error("Erro ao buscar documentos:", error);
+      } finally {
+        setLoadingDocs(false);
+      }
+    };
 
+    if (user) {
+      fetchDocuments();
+    }
+  }, [user]);
+
+  // Auth
+  const handleLogin = (email: string, password: string) =>
+    login(email, password);
+  const handleRegister = (name: string, email: string, password: string) =>
+    register(name, email, password);
+
+  // Download
   const handleDocumentDownload = (document: Document) => {
-    console.log("Baixando documento:", document);
-    alert(`Baixando: ${document.fileUrl}`);
+    const token = localStorage.getItem("token");
+    if (!token) return alert("Token não encontrado");
+
+    const url = `${import.meta.env.VITE_API_URL}/documents/${
+      document.id
+    }/download?token=${token}`;
+    window.location.href = url;
   };
 
-  const userDocuments = user ? getUserDocuments(user.id) : [];
+  // Visualização
+  const handleDocumentView = (document: Document) => {
+    const token = localStorage.getItem("token");
+    if (!token) return alert("Token não encontrado");
+
+    const url = `${import.meta.env.VITE_API_URL}/documents/${
+      document.id
+    }/view?token=${token}`;
+    window.open(url, "_blank");
+  };
 
   return (
     <Routes>
@@ -118,7 +158,7 @@ const AppContent = () => {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard user={user!} documents={userDocuments} />
+            <Dashboard user={user!} documents={documents} />
           </ProtectedRoute>
         }
       />
@@ -128,8 +168,9 @@ const AppContent = () => {
         element={
           <ProtectedRoute>
             <Documents
-              documents={userDocuments}
+              documents={documents}
               onDownload={handleDocumentDownload}
+              onView={handleDocumentView}
             />
           </ProtectedRoute>
         }
@@ -167,16 +208,15 @@ const AppContent = () => {
   );
 };
 
-function App() {
-  return (
-    <AuthProvider>
-      <UserSettingsProvider>
-        <Router>
-          <AppContent />
-        </Router>
-      </UserSettingsProvider>
-    </AuthProvider>
-  );
-}
+// App principal
+const App = () => (
+  <AuthProvider>
+    <UserSettingsProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </UserSettingsProvider>
+  </AuthProvider>
+);
 
 export default App;
