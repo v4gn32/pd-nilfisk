@@ -27,22 +27,22 @@ const Dashboard: React.FC<DashboardProps> = ({ user, documents, users }) => {
   const getDocumentCountByType = (type: string) =>
     documents.filter((doc) => doc.type.toUpperCase() === type).length;
 
-  const getLatestDocument = () => {
-    if (documents.length === 0) return null;
-    return documents.reduce((latest, current) =>
-      new Date(current.createdAt) > new Date(latest.createdAt)
-        ? current
-        : latest
-    );
+  const getCommonUserCount = () =>
+    users.filter((u) => u.role === "COMMON").length;
+
+  const getLatestDocuments = () => {
+    return [...documents]
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+      .slice(0, 5);
   };
 
   const getCurrentYearDocuments = () => {
     const currentYear = new Date().getFullYear();
     return documents.filter((doc) => doc.year === currentYear);
   };
-
-  const getCommonUserCount = () =>
-    users.filter((u) => u.role === "COMMON").length;
 
   const getDocumentTypeLabel = (type: string) => {
     switch (type) {
@@ -77,79 +77,66 @@ const Dashboard: React.FC<DashboardProps> = ({ user, documents, users }) => {
     return months[monthNumber - 1] || "Desconhecido";
   };
 
-  const latestDocument = getLatestDocument();
+  const latestDocument = documents.reduce(
+    (latest, current) =>
+      new Date(current.createdAt) > new Date(latest.createdAt)
+        ? current
+        : latest,
+    documents[0]
+  );
   const currentYearDocs = getCurrentYearDocuments();
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold text-[#28313F] mb-6">Painel</h1>
 
+      {/* Cards principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-blue-100">
-                <FileText className="text-blue-500" size={24} />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm text-gray-500">Holerites</p>
-                <h3 className="text-2xl font-bold">
-                  {getDocumentCountByType("HOLERITE")}
-                </h3>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-green-100">
-                <FileBadge className="text-green-500" size={24} />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm text-gray-500">Férias</p>
-                <h3 className="text-2xl font-bold">
-                  {getDocumentCountByType("FERIAS")}
-                </h3>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-purple-100">
-                <FileSpreadsheet className="text-purple-500" size={24} />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm text-gray-500">Comissões</p>
-                <h3 className="text-2xl font-bold">
-                  {getDocumentCountByType("COMISSAO")}
-                </h3>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-orange-100">
-                <FileWarning className="text-orange-500" size={24} />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm text-gray-500">Informes</p>
-                <h3 className="text-2xl font-bold">
-                  {getDocumentCountByType("INFORME_RENDIMENTO")}
-                </h3>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {["HOLERITE", "FERIAS", "COMISSAO", "INFORME_RENDIMENTO"].map(
+          (type) => (
+            <Card key={type}>
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div
+                    className={`p-3 rounded-full ${
+                      type === "HOLERITE"
+                        ? "bg-blue-100"
+                        : type === "FERIAS"
+                        ? "bg-green-100"
+                        : type === "COMISSAO"
+                        ? "bg-purple-100"
+                        : "bg-orange-100"
+                    }`}
+                  >
+                    {type === "HOLERITE" && (
+                      <FileText className="text-blue-500" size={24} />
+                    )}
+                    {type === "FERIAS" && (
+                      <FileBadge className="text-green-500" size={24} />
+                    )}
+                    {type === "COMISSAO" && (
+                      <FileSpreadsheet className="text-purple-500" size={24} />
+                    )}
+                    {type === "INFORME_RENDIMENTO" && (
+                      <FileWarning className="text-orange-500" size={24} />
+                    )}
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm text-gray-500">
+                      {getDocumentTypeLabel(type)}
+                    </p>
+                    <h3 className="text-2xl font-bold">
+                      {getDocumentCountByType(type)}
+                    </h3>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        )}
       </div>
 
+      {/* Resumo e últimos documentos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -158,7 +145,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, documents, users }) => {
           <CardContent>
             {documents.length > 0 ? (
               <div className="space-y-4">
-                {documents.slice(0, 5).map((doc) => (
+                {getLatestDocuments().map((doc) => (
                   <div
                     key={doc.id}
                     className="flex items-center p-3 rounded-md hover:bg-gray-50"
