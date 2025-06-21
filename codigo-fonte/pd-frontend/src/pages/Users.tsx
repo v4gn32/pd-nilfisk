@@ -42,12 +42,9 @@ const Users: React.FC = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch(
-          "https://pd-nilfisk-backend.onrender.com/api/users",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/users`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (!res.ok) throw new Error("Erro ao buscar usuários");
         const data = await res.json();
         if (!Array.isArray(data)) throw new Error("Resposta inválida");
@@ -83,17 +80,14 @@ const Users: React.FC = () => {
 
   const handleAddUser = async (newUser: UserFormData) => {
     try {
-      const res = await fetch(
-        "https://pd-nilfisk-backend.onrender.com/api/users",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(newUser),
-        }
-      );
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/users`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newUser),
+      });
       if (!res.ok) throw new Error("Erro ao criar usuário");
       const created = await res.json();
       setUsers((prev) => [...prev, created]);
@@ -105,17 +99,14 @@ const Users: React.FC = () => {
 
   const handleEditUser = async (id: number, updated: Omit<User, "id">) => {
     try {
-      const res = await fetch(
-        `https://pd-nilfisk-backend.onrender.com/api/users/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(updated),
-        }
-      );
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/users/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updated),
+      });
       if (!res.ok) throw new Error("Erro ao editar usuário");
       const updatedUser = await res.json();
       setUsers((prev) =>
@@ -135,7 +126,7 @@ const Users: React.FC = () => {
 
     try {
       const res = await fetch(
-        `https://pd-nilfisk-backend.onrender.com/api/users/${user.id}`,
+        `${import.meta.env.VITE_API_URL}/users/${user.id}`,
         {
           method: "DELETE",
           headers: {
