@@ -118,7 +118,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       }
 
       try {
-        const response = await api.get("/auth/profile");
+        const response = await api.get("/profile"); // ✅ Corrigido aqui
         const user = response.data;
 
         localStorage.setItem("auth", JSON.stringify({ user }));
@@ -130,7 +130,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           error: null,
         });
       } catch {
-        // Limpa o localStorage se o token for inválido
         localStorage.removeItem("auth");
         localStorage.removeItem("token");
         setAuthState({
