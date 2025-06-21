@@ -17,6 +17,9 @@ import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import { User } from "../types";
 
+// Fallback para localhost caso não esteja definida em produção
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
+
 interface UserFormData {
   name: string;
   email: string;
@@ -36,13 +39,12 @@ const Users: React.FC = () => {
     password: "",
   });
   const [formErrors, setFormErrors] = useState<Partial<UserFormData>>({});
-
   const token = localStorage.getItem("token");
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/users`, {
+        const res = await fetch(`${API_URL}/users`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("Erro ao buscar usuários");
@@ -80,7 +82,7 @@ const Users: React.FC = () => {
 
   const handleAddUser = async (newUser: UserFormData) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/users`, {
+      const res = await fetch(`${API_URL}/users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -99,7 +101,7 @@ const Users: React.FC = () => {
 
   const handleEditUser = async (id: number, updated: Omit<User, "id">) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/users/${id}`, {
+      const res = await fetch(`${API_URL}/users/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -125,20 +127,13 @@ const Users: React.FC = () => {
     if (!confirmed) return;
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/users/${user.id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const res = await fetch(`${API_URL}/users/${user.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      if (!res.ok && res.status !== 204) {
+      if (!res.ok && res.status !== 204)
         throw new Error("Erro ao excluir usuário");
-      }
-
       setUsers((prev) => prev.filter((u) => u.id !== user.id));
     } catch (err) {
       console.error(err);
