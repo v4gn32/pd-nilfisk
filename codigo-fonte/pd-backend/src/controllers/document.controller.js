@@ -128,9 +128,7 @@ exports.uploadBulkPayslips = async (req, res) => {
   }
 };
 
-/**
- * 📄 Listar documentos do usuário autenticado
- */
+/* 📄 Listar documentos do usuário autenticado */
 exports.getMyDocuments = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -153,9 +151,7 @@ exports.getMyDocuments = async (req, res) => {
   }
 };
 
-/**
- * 📄 Listar todos os documentos (admin)
- */
+/* 📄 Listar todos os documentos (admin) */
 exports.getAllDocuments = async (req, res) => {
   try {
     const { type, month, year } = req.query;
@@ -182,9 +178,7 @@ exports.getAllDocuments = async (req, res) => {
   }
 };
 
-/**
- * 📥 Download de documento
- */
+/* 📥 Download de documento */
 exports.downloadDocument = async (req, res) => {
   try {
     const documentId = parseInt(req.params.id);
@@ -210,9 +204,10 @@ exports.downloadDocument = async (req, res) => {
   }
 };
 
-/**
- * 🗑️ Exclusão de documento
- */
+/* 🗑️ Exclusão de documento */
+const { deleteFromS3 } = require("../services/s3.service");
+const path = require("path");
+
 exports.deleteDocument = async (req, res) => {
   try {
     const documentId = parseInt(req.params.id);
@@ -225,8 +220,14 @@ exports.deleteDocument = async (req, res) => {
       return res.status(404).json({ error: "Documento não encontrado" });
     }
 
-    // 🔴 O ideal é deletar também do S3, se quiser posso implementar isso.
+    // Extrai apenas a chave (key) do S3 a partir da URL completa
+    const urlParts = document.url.split("/");
+    const key = urlParts.slice(3).join("/"); // remove https://s3.amazonaws.com/bucket-name/
 
+    // Exclui do S3
+    await deleteFromS3(key);
+
+    // Exclui do banco
     await prisma.document.delete({ where: { id: documentId } });
 
     res.json({ message: "Documento excluído com sucesso" });
@@ -236,9 +237,7 @@ exports.deleteDocument = async (req, res) => {
   }
 };
 
-/**
- * 👁️ Visualizar documento
- */
+/* 👁️ Visualizar documento */
 exports.viewDocument = async (req, res) => {
   const { id } = req.params;
 
