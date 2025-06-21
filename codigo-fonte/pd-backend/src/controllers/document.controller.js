@@ -1,13 +1,12 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-const path = require("path");
 const fs = require("fs");
 const pdfParse = require("pdf-parse");
 const { PDFDocument } = require("pdf-lib");
+const { uploadToS3 } = require("../services/s3.service");
 const { sendNewDocumentEmail } = require("../services/emailService");
 
-// 🔤 Função para normalizar nomes
 const normalize = (str) =>
   str
     .normalize("NFD")
@@ -27,21 +26,14 @@ exports.uploadDocument = async (req, res) => {
     if (!type || !month || !year || !userId)
       return res.status(400).json({ error: "Dados incompletos" });
 
-    const filename = req.file.originalname;
-    const tempPath = req.file.path;
-    const uploadDir = path.join(__dirname, "..", "uploads");
-
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-    const targetPath = path.join(uploadDir, filename);
-    fs.renameSync(tempPath, targetPath);
-
-    const fileUrl = `/uploads/${filename}`;
+    const buffer = fs.readFileSync(req.file.path);
+    const key = await uploadToS3(buffer, req.file.originalname);
+    const fileUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 
     const document = await prisma.document.create({
       data: {
         type,
-        filename,
+        filename: req.file.originalname,
         url: fileUrl,
         month: parseInt(month),
         year: parseInt(year),
@@ -67,15 +59,12 @@ exports.uploadBulkPayslips = async (req, res) => {
     if (!req.file)
       return res.status(400).json({ error: "Arquivo PDF não enviado" });
 
-    const tempPath = req.file.path;
-    const buffer = fs.readFileSync(tempPath);
+    const buffer = fs.readFileSync(req.file.path);
     const pdfDoc = await PDFDocument.load(buffer);
     const totalPages = pdfDoc.getPageCount();
-
     const users = await prisma.user.findMany();
+
     let processed = 0;
-    const uploadDir = path.join(__dirname, "..", "uploads");
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
     for (let i = 0; i < totalPages; i++) {
       const singleDoc = await PDFDocument.create();
@@ -96,14 +85,14 @@ exports.uploadBulkPayslips = async (req, res) => {
       }
 
       const filename = `holerite_${matchedUser.id}_${Date.now()}.pdf`;
-      const targetPath = path.join(uploadDir, filename);
-      fs.writeFileSync(targetPath, pdfBytes);
+      const key = await uploadToS3(Buffer.from(pdfBytes), filename);
+      const fileUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 
       await prisma.document.create({
         data: {
           type: "HOLERITE",
           filename,
-          url: `/uploads/${filename}`,
+          url: fileUrl,
           month: parseInt(month),
           year: parseInt(year),
           userId: matchedUser.id,
@@ -214,14 +203,7 @@ exports.downloadDocument = async (req, res) => {
       return res.status(403).json({ error: "Acesso negado" });
     }
 
-    const filePath = path.join(__dirname, "..", "uploads", document.filename);
-    if (!fs.existsSync(filePath)) {
-      return res
-        .status(404)
-        .json({ error: "Arquivo não encontrado no servidor" });
-    }
-
-    res.download(filePath, document.filename);
+    return res.redirect(document.url);
   } catch (error) {
     console.error("Erro ao fazer download:", error);
     res.status(500).json({ error: "Erro interno ao baixar o documento" });
@@ -243,8 +225,7 @@ exports.deleteDocument = async (req, res) => {
       return res.status(404).json({ error: "Documento não encontrado" });
     }
 
-    const filePath = path.join(__dirname, "..", "uploads", document.filename);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    // 🔴 O ideal é deletar também do S3, se quiser posso implementar isso.
 
     await prisma.document.delete({ where: { id: documentId } });
 
@@ -256,7 +237,7 @@ exports.deleteDocument = async (req, res) => {
 };
 
 /**
- * 👁️ Visualizar documento (abrir no navegador)
+ * 👁️ Visualizar documento
  */
 exports.viewDocument = async (req, res) => {
   const { id } = req.params;
@@ -270,7 +251,7 @@ exports.viewDocument = async (req, res) => {
       return res.status(404).json({ error: "Documento não encontrado" });
     }
 
-    return res.redirect(document.url); // ✅ Corrigido para .url
+    return res.redirect(document.url);
   } catch (error) {
     console.error("Erro ao redirecionar documento:", error);
     return res
