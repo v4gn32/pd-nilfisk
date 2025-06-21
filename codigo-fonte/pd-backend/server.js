@@ -11,7 +11,10 @@ app.use("/uploads", express.static(path.join(__dirname, "src", "uploads")));
 // ✅ Liberar frontend para conectar com backend
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173", // manter para testes locais
+      "https://pd-nilfisk.onrender.com", // novo: liberar produção
+    ],
     credentials: true,
   })
 );
