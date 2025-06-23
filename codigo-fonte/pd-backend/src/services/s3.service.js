@@ -1,4 +1,8 @@
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} = require("@aws-sdk/client-s3");
 const { v4: uuidv4 } = require("uuid");
 
 const s3 = new S3Client({
@@ -24,12 +28,6 @@ async function uploadToS3(fileBuffer, fileName, mimeType) {
   return fileKey;
 }
 
-module.exports = {
-  uploadToS3,
-};
-
-const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
-
 async function deleteFromS3(key) {
   const command = new DeleteObjectCommand({
     Bucket: process.env.AWS_BUCKET_NAME,
@@ -38,3 +36,8 @@ async function deleteFromS3(key) {
 
   await s3.send(command);
 }
+
+module.exports = {
+  uploadToS3,
+  deleteFromS3,
+};
