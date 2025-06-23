@@ -1,23 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const path = require("path");
 
 const documentController = require("../controllers/document.controller");
 const authenticate = require("../middlewares/auth.middleware");
 const isAdmin = require("../middlewares/isAdmin.middleware");
 
-// 🗂️ Configuração de armazenamento temporário com multer
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "..", "temp"));
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
-});
-
-const upload = multer({ storage });
+// ✅ Usar armazenamento em memória (ideal para Render)
+const upload = multer({ storage: multer.memoryStorage() });
 
 /**
  * ROTAS DE DOCUMENTOS

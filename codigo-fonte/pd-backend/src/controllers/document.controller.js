@@ -1,10 +1,9 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-const fs = require("fs");
 const pdfParse = require("pdf-parse");
 const { PDFDocument } = require("pdf-lib");
-const { uploadToS3 } = require("../services/s3.service");
+const { uploadToS3, deleteFromS3 } = require("../services/s3.service");
 const { sendNewDocumentEmail } = require("../services/emailService");
 
 const normalize = (str) =>
@@ -26,8 +25,12 @@ exports.uploadDocument = async (req, res) => {
     if (!type || !month || !year || !userId)
       return res.status(400).json({ error: "Dados incompletos" });
 
-    const buffer = fs.readFileSync(req.file.path);
-    const key = await uploadToS3(buffer, req.file.originalname);
+    const buffer = req.file.buffer;
+    const key = await uploadToS3(
+      buffer,
+      req.file.originalname,
+      req.file.mimetype
+    );
     const fileUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 
     const document = await prisma.document.create({
@@ -59,7 +62,7 @@ exports.uploadBulkPayslips = async (req, res) => {
     if (!req.file)
       return res.status(400).json({ error: "Arquivo PDF não enviado" });
 
-    const buffer = fs.readFileSync(req.file.path);
+    const buffer = req.file.buffer;
     const pdfDoc = await PDFDocument.load(buffer);
     const totalPages = pdfDoc.getPageCount();
     const users = await prisma.user.findMany();
@@ -85,7 +88,11 @@ exports.uploadBulkPayslips = async (req, res) => {
       }
 
       const filename = `holerite_${matchedUser.id}_${Date.now()}.pdf`;
-      const key = await uploadToS3(Buffer.from(pdfBytes), filename);
+      const key = await uploadToS3(
+        Buffer.from(pdfBytes),
+        filename,
+        "application/pdf"
+      );
       const fileUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 
       await prisma.document.create({
@@ -205,9 +212,6 @@ exports.downloadDocument = async (req, res) => {
 };
 
 /* 🗑️ Exclusão de documento */
-const { deleteFromS3 } = require("../services/s3.service");
-const path = require("path");
-
 exports.deleteDocument = async (req, res) => {
   try {
     const documentId = parseInt(req.params.id);
@@ -220,14 +224,10 @@ exports.deleteDocument = async (req, res) => {
       return res.status(404).json({ error: "Documento não encontrado" });
     }
 
-    // Extrai apenas a chave (key) do S3 a partir da URL completa
     const urlParts = document.url.split("/");
-    const key = urlParts.slice(3).join("/"); // remove https://s3.amazonaws.com/bucket-name/
+    const key = urlParts.slice(3).join("/");
 
-    // Exclui do S3
     await deleteFromS3(key);
-
-    // Exclui do banco
     await prisma.document.delete({ where: { id: documentId } });
 
     res.json({ message: "Documento excluído com sucesso" });
