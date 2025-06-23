@@ -118,7 +118,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       }
 
       try {
-        const response = await api.get("/profile"); // ✅ Corrigido aqui
+        const response = await api.get("/auth/profile"); // ✅ Corrigido aqui
         const user = response.data;
 
         localStorage.setItem("auth", JSON.stringify({ user }));
