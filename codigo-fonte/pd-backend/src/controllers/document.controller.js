@@ -3,7 +3,11 @@ const prisma = new PrismaClient();
 
 const pdfParse = require("pdf-parse");
 const { PDFDocument } = require("pdf-lib");
-const { uploadToS3, deleteFromS3 } = require("../services/s3.service");
+const {
+  uploadToS3,
+  deleteFromS3,
+  generateSignedUrl,
+} = require("../services/s3.service");
 const { sendNewDocumentEmail } = require("../services/emailService");
 
 const normalize = (str) =>
@@ -204,7 +208,10 @@ exports.downloadDocument = async (req, res) => {
       return res.status(403).json({ error: "Acesso negado" });
     }
 
-    return res.redirect(document.url);
+    const key = document.url.split("/").slice(3).join("/");
+    const signedUrl = await generateSignedUrl(key);
+
+    return res.redirect(signedUrl);
   } catch (error) {
     console.error("Erro ao fazer download:", error);
     res.status(500).json({ error: "Erro interno ao baixar o documento" });
@@ -250,7 +257,10 @@ exports.viewDocument = async (req, res) => {
       return res.status(404).json({ error: "Documento não encontrado" });
     }
 
-    return res.redirect(document.url);
+    const key = document.url.split("/").slice(3).join("/");
+    const signedUrl = await generateSignedUrl(key);
+
+    return res.redirect(signedUrl);
   } catch (error) {
     console.error("Erro ao redirecionar documento:", error);
     return res
