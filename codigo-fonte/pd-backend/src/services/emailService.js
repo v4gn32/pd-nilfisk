@@ -1,23 +1,45 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
+  host: "smtp.seuservidordemail.com",
   port: 587,
-  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
 exports.sendNewDocumentEmail = async (to, name, type, month, year) => {
+  const monthNames = [
+    "Janeiro",
+    "Fevereiro",
+    "Março",
+    "Abril",
+    "Maio",
+    "Junho",
+    "Julho",
+    "Agosto",
+    "Setembro",
+    "Outubro",
+    "Novembro",
+    "Dezembro",
+  ];
+
+  const subject = `📄 Novo documento disponível: ${type}`;
+  const html = `
+    <p>Olá <strong>${name}</strong>,</p>
+    <p>Um novo documento do tipo <strong>${type}</strong> foi adicionado ao seu portal para o mês <strong>${
+    monthNames[month - 1]
+  }/${year}</strong>.</p>
+    <p>Você pode acessá-lo diretamente no portal Nilfisk.</p>
+    <br />
+    <p>Atenciosamente,<br />Equipe Nilfisk</p>
+  `;
+
   await transporter.sendMail({
-    from: '"Nilfisk RH" <no-reply@nilfisk.com>',
+    from: `"Portal Nilfisk" <${process.env.EMAIL_USER}>`,
     to,
-    subject: `Novo documento disponível: ${type}`,
-    html: `<p>Olá, ${name},</p>
-      <p>Um novo documento (${type}) referente a <strong>${month}/${year}</strong> foi disponibilizado no portal.</p>
-      <p>Acesse sua conta para visualizar.</p>
-      <p>Equipe Nilfisk</p>`
+    subject,
+    html,
   });
 };
