@@ -13,7 +13,6 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173", // manter para testes locais
-      "https://pd-nilfisk.onrender.com", // novo: liberar produção
       "https://pdnilfisk.com", // novo: liberar produção
     ],
     credentials: true,
