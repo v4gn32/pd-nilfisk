@@ -21,27 +21,32 @@ interface DashboardProps {
   users: User[];
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, documents, users }) => {
-  const isAdmin = user.role === "ADMIN";
+const Dashboard: React.FC<DashboardProps> = ({
+  user,
+  documents = [],
+  users = [],
+}) => {
+  const isAdmin = user?.role === "ADMIN";
 
   const getDocumentCountByType = (type: string) =>
-    documents.filter((doc) => doc.type.toUpperCase() === type).length;
+    documents.filter((doc) => doc?.type?.toUpperCase() === type).length;
 
   const getCommonUserCount = () =>
     users.filter((u) => u.role === "COMMON").length;
 
+  const getCurrentYearDocuments = () => {
+    const year = new Date().getFullYear();
+    return documents.filter((doc) => doc.year === year);
+  };
+
   const getLatestDocuments = () => {
     return [...documents]
+      .filter((doc) => doc.createdAt)
       .sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
       .slice(0, 5);
-  };
-
-  const getCurrentYearDocuments = () => {
-    const currentYear = new Date().getFullYear();
-    return documents.filter((doc) => doc.year === currentYear);
   };
 
   const getDocumentTypeLabel = (type: string) => {
@@ -77,20 +82,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, documents, users }) => {
     return months[monthNumber - 1] || "Desconhecido";
   };
 
-  const latestDocument = documents.reduce(
-    (latest, current) =>
-      new Date(current.createdAt) > new Date(latest.createdAt)
-        ? current
-        : latest,
-    documents[0]
-  );
   const currentYearDocs = getCurrentYearDocuments();
+  const latestDocument = getLatestDocuments()[0] || null;
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold text-[#28313F] mb-6">Painel</h1>
 
-      {/* Cards principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         {["HOLERITE", "FERIAS", "COMISSAO", "INFORME_RENDIMENTO"].map(
           (type) => (
@@ -136,7 +134,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, documents, users }) => {
         )}
       </div>
 
-      {/* Resumo e últimos documentos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -179,7 +176,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, documents, users }) => {
                       </div>
                     </div>
                     <div className="ml-auto text-xs text-gray-400">
-                      {new Date(doc.createdAt).toLocaleDateString()}
+                      {doc.createdAt &&
+                        new Date(doc.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                 ))}
@@ -217,12 +215,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, documents, users }) => {
               {isAdmin && (
                 <div className="pt-4 space-y-3">
                   <h4 className="font-medium mb-2">Estatísticas de Admin</h4>
-
                   <div className="flex justify-between items-center pb-2 border-b border-gray-100">
                     <span className="text-gray-600">Usuários Comuns</span>
                     <span className="font-bold">{getCommonUserCount()}</span>
                   </div>
-
                   <div className="flex items-center p-3 bg-[#28313F]/5 rounded-md">
                     <Users size={18} className="text-[#28313F] mr-2" />
                     <span className="text-gray-600">
