@@ -1,6 +1,8 @@
+// src/pages/Login.tsx
+
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Mail, KeyRound, AlertCircle } from "lucide-react";
+import { Mail, KeyRound, AlertCircle, Eye, EyeOff } from "lucide-react";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import {
@@ -20,10 +22,15 @@ interface LoginProps {
 const Login: React.FC<LoginProps> = ({ onLogin, isLoading, error }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onLogin(email, password);
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -43,7 +50,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, isLoading, error }) => {
             {error && (
               <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded-md flex items-start">
                 <AlertCircle
-                  className="text-red-400 mr-2 flex-shrink-0 mt-0.5\"
+                  className="text-red-400 mr-2 flex-shrink-0 mt-0.5"
                   size={16}
                 />
                 <p className="text-sm text-red-400">{error}</p>
@@ -72,18 +79,28 @@ const Login: React.FC<LoginProps> = ({ onLogin, isLoading, error }) => {
                 <div className="relative">
                   <Input
                     label="Senha"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Sua senha"
                     fullWidth
                     required
-                    className="bg-white/5 border-gray-700 text-white placeholder-gray-500"
+                    className="bg-white/5 border-gray-700 text-white placeholder-gray-500 pr-20"
                   />
                   <KeyRound
-                    className="absolute right-3 top-9 text-gray-500"
+                    className="absolute right-12 top-9 text-gray-500"
                     size={18}
                   />
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="absolute right-3 top-9 text-gray-400 hover:text-gray-200 transition-colors focus:outline-none"
+                    aria-label={
+                      showPassword ? "Ocultar senha" : "Mostrar senha"
+                    }
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
 
                 <Button
