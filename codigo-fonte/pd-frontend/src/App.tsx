@@ -7,8 +7,12 @@ import {
 } from "react-router-dom";
 import axios from "axios";
 
+// Contextos
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { UserSettingsProvider } from "./contexts/UserSettingsContext";
+
+// Tipos
+import { Document, User } from "./types";
 
 // Páginas
 import Home from "./pages/Home";
@@ -22,9 +26,8 @@ import Settings from "./pages/Settings";
 
 // Componentes
 import Sidebar from "./components/Sidebar";
-import { Document, User } from "./types";
 
-// Layout com sidebar
+// Layout com Sidebar
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { user, logout } = useAuth();
 
@@ -62,84 +65,51 @@ const ProtectedRoute = ({
   return <AppLayout>{children}</AppLayout>;
 };
 
-// Conteúdo principal
-const AppContent = () => {
+// Conteúdo principal com rotas
+const AppRoutes = () => {
   const { user, login, register } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [loadingDocs, setLoadingDocs] = useState<boolean>(true);
 
-  // 📥 Buscar documentos
-  const fetchDocuments = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/documents/me`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setDocuments(response.data);
-    } catch (error) {
-      console.error("Erro ao buscar documentos:", error);
-    } finally {
-      setLoadingDocs(false);
-    }
-  };
-
-  // 👥 Buscar usuários (admin)
-  const fetchUsers = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/users`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setUsers(response.data);
-    } catch (err) {
-      console.error("Erro ao buscar usuários:", err);
-    }
-  };
-
-  // 🎯 Efeito para buscar dados após login
   useEffect(() => {
-    if (user) {
-      fetchDocuments();
-      fetchUsers();
-    }
-  }, [user]);
+    const isMounted = { current: true };
 
-  const handleLogin = (email: string, password: string) =>
-    login(email, password);
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
 
-  const handleRegister = (name: string, email: string, password: string) =>
-    register(name, email, password);
+        // Buscar documentos do usuário
+        const docResponse = await axios.get(
+          `${import.meta.env.VITE_API_URL}/documents/me`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (isMounted.current) setDocuments(docResponse.data);
 
-  const handleDocumentDownload = (document: Document) => {
-    const token = localStorage.getItem("token");
-    if (!token) return alert("Token não encontrado");
+        // Buscar todos os usuários (somente se for ADMIN)
+        const userResponse = await axios.get(
+          `${import.meta.env.VITE_API_URL}/users`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (isMounted.current) setUsers(userResponse.data);
+      } catch (error) {
+        console.error("Erro ao buscar dados:", error);
+      }
+    };
 
-    const url = `${import.meta.env.VITE_API_URL}/documents/${
-      document.id
-    }/download?token=${token}`;
-    window.location.href = url;
-  };
-
-  const handleDocumentView = (document: Document) => {
-    const token = localStorage.getItem("token");
-    if (!token) return alert("Token não encontrado");
-
-    const url = `${import.meta.env.VITE_API_URL}/documents/${
-      document.id
-    }/view?token=${token}`;
-    window.open(url, "_blank");
-  };
+    fetchData();
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   return (
     <Routes>
@@ -151,7 +121,7 @@ const AppContent = () => {
           user ? (
             <Navigate to="/dashboard" />
           ) : (
-            <Login onLogin={handleLogin} isLoading={false} error={null} />
+            <Login onLogin={login} isLoading={false} error={null} />
           )
         }
       />
@@ -162,11 +132,7 @@ const AppContent = () => {
           user ? (
             <Navigate to="/dashboard" />
           ) : (
-            <Register
-              onRegister={handleRegister}
-              isLoading={false}
-              error={null}
-            />
+            <Register onRegister={register} isLoading={false} error={null} />
           )
         }
       />
@@ -184,11 +150,7 @@ const AppContent = () => {
         path="/documents"
         element={
           <ProtectedRoute>
-            <Documents
-              documents={documents}
-              onDownload={handleDocumentDownload}
-              onView={handleDocumentView}
-            />
+            <Documents documents={documents} />
           </ProtectedRoute>
         }
       />
@@ -197,7 +159,7 @@ const AppContent = () => {
         path="/upload"
         element={
           <ProtectedRoute adminOnly>
-            <UploadPage onUploadSuccess={fetchDocuments} />
+            <UploadPage />
           </ProtectedRoute>
         }
       />
@@ -230,7 +192,7 @@ const App = () => (
   <AuthProvider>
     <UserSettingsProvider>
       <Router>
-        <AppContent />
+        <AppRoutes />
       </Router>
     </UserSettingsProvider>
   </AuthProvider>
