@@ -268,9 +268,3 @@ exports.viewDocument = async (req, res) => {
       .json({ error: "Erro interno ao visualizar documento" });
   }
 };
-
-// Envia o e-mail para o colaborador
-const user = await prisma.user.findUnique({
-  where: { id: parseInt(userId) },
-});
-await sendNewDocumentEmail(user.email, user.name, type, month, year);
