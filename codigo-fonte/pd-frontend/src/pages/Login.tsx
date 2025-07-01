@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Mail, KeyRound, AlertCircle } from "lucide-react";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
@@ -10,20 +10,23 @@ import {
   CardTitle,
   CardFooter,
 } from "../components/ui/Card";
+import { useAuth } from "../contexts/AuthContext";
 
-interface LoginProps {
-  onLogin: (email: string, password: string) => void;
-  isLoading: boolean;
-  error: string | null;
-}
-
-const Login: React.FC<LoginProps> = ({ onLogin, isLoading, error }) => {
+const Login: React.FC = () => {
+  const { login, isAuthenticated, isLoading, error } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin(email, password);
+    await login(email, password);
   };
 
   return (
@@ -43,7 +46,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, isLoading, error }) => {
             {error && (
               <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded-md flex items-start">
                 <AlertCircle
-                  className="text-red-400 mr-2 flex-shrink-0 mt-0.5\"
+                  className="text-red-400 mr-2 flex-shrink-0 mt-0.5"
                   size={16}
                 />
                 <p className="text-sm text-red-400">{error}</p>

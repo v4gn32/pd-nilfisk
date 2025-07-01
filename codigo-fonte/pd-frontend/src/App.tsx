@@ -26,6 +26,7 @@ import Settings from "./pages/Settings";
 
 // Componentes
 import Sidebar from "./components/Sidebar";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 // Layout com Sidebar
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
@@ -189,13 +190,15 @@ const AppRoutes = () => {
 
 // App principal
 const App = () => (
-  <AuthProvider>
-    <UserSettingsProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
-    </UserSettingsProvider>
-  </AuthProvider>
+  <ThemeProvider>
+    <AuthProvider>
+      <UserSettingsProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </UserSettingsProvider>
+    </AuthProvider>
+  </ThemeProvider>
 );
 
 export default App;

@@ -8,7 +8,7 @@ import React, {
 import api from "../utils/apiClient";
 import { AuthState } from "../types";
 
-// Tipagem do contexto para controle global da autenticação
+// Tipagem do contexto de autenticação
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
@@ -18,7 +18,7 @@ interface AuthContextType extends AuthState {
 // Criação do contexto
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Provider que envolverá o App
+// Provider que envolve a aplicação
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
@@ -29,26 +29,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     error: null,
   });
 
-  // Função para login
+  // Login
   const login = async (email: string, password: string) => {
     try {
       setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       const response = await api.post("/auth/login", { email, password });
-      const { token, user } = response.data;
+      const { token } = response.data;
 
-      // Armazena token e usuário
       localStorage.setItem("token", token);
-      localStorage.setItem("auth", JSON.stringify({ user }));
 
-      setAuthState({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      });
+      await fetchProfile(); // atualiza com dados do usuário
     } catch (error: unknown) {
-      // Tratamento seguro para erros
       let msg = "Falha no login";
       if (
         typeof error === "object" &&
@@ -67,7 +59,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  // Função para cadastro
+  // Cadastro
   const register = async (name: string, email: string, password: string) => {
     try {
       setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
@@ -77,17 +69,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         email,
         password,
       });
-      const { token, user } = response.data;
+
+      const { token } = response.data;
 
       localStorage.setItem("token", token);
-      localStorage.setItem("auth", JSON.stringify({ user }));
 
-      setAuthState({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      });
+      await fetchProfile(); // atualiza com dados do usuário
     } catch (error: unknown) {
       let msg = "Falha no cadastro";
       if (
@@ -107,46 +94,43 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  // Executado ao carregar o app - busca perfil se token existir
+  // Busca o perfil do usuário (se existir token)
+  const fetchProfile = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setAuthState((prev) => ({ ...prev, isLoading: false }));
+      return;
+    }
+
+    try {
+      const response = await api.get("/auth/profile");
+      const user = response.data;
+
+      setAuthState({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+    } catch {
+      localStorage.removeItem("token");
+      setAuthState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+      });
+    }
+  };
+
+  // Executado ao carregar o app
   useEffect(() => {
-    const fetchProfile = async () => {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setAuthState((prev) => ({ ...prev, isLoading: false }));
-        return;
-      }
-
-      try {
-        const response = await api.get("/auth/profile"); // ✅ Corrigido aqui
-        const user = response.data;
-
-        localStorage.setItem("auth", JSON.stringify({ user }));
-
-        setAuthState({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        });
-      } catch {
-        localStorage.removeItem("auth");
-        localStorage.removeItem("token");
-        setAuthState({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-        });
-      }
-    };
-
     fetchProfile();
   }, []);
 
-  // Função de logout
+  // Logout
   const logout = () => {
-    localStorage.removeItem("auth");
     localStorage.removeItem("token");
     setAuthState({
       user: null,
@@ -163,7 +147,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   );
 };
 
-// Hook para consumir o contexto
+// Hook personalizado
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
