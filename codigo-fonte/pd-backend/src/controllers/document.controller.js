@@ -269,20 +269,8 @@ exports.viewDocument = async (req, res) => {
   }
 };
 
-// // Após salvar o documento
-// const newDocument = await prisma.document.create({
-//   data: {
-//     filename,
-//     originalName: req.file.originalname,
-//     type,
-//     month: parseInt(month),
-//     year: parseInt(year),
-//     userId: parseInt(userId),
-//   },
-// });
-
-// // Envia o e-mail para o colaborador
-// const user = await prisma.user.findUnique({
-//   where: { id: parseInt(userId) },
-// });
-// await sendNewDocumentEmail(user.email, user.name, type, month, year);
+// Envia o e-mail para o colaborador
+const user = await prisma.user.findUnique({
+  where: { id: parseInt(userId) },
+});
+await sendNewDocumentEmail(user.email, user.name, type, month, year);
