@@ -1,4 +1,5 @@
-import React from "react";
+// frontend/src/pages/Dashboard.tsx
+import React, { useEffect, useState } from "react";
 import {
   Users,
   FileText,
@@ -16,16 +17,53 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/Card";
+import api from "../services/api"; // Certifique-se que esse arquivo adiciona o token JWT no header
 import { Document, User } from "../types";
 
-interface DashboardProps {
-  user: User;
-  users: User[];
-  documents: Document[];
-}
-
-const Dashboard: React.FC<DashboardProps> = ({ user, users, documents }) => {
+const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+
+  const [user, setUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Carregar dados ao montar
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const profile = await api.get("/profile");
+        setUser(profile.data);
+
+        if (profile.data.role === "ADMIN") {
+          const [usersRes, documentsRes] = await Promise.all([
+            api.get("/users"),
+            api.get("/documents"),
+          ]);
+          setUsers(usersRes.data);
+          setDocuments(documentsRes.data);
+        } else {
+          const docsRes = await api.get("/documents");
+          setDocuments(docsRes.data);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Carregando dados do painel...</p>
+      </div>
+    );
+  }
+
   const isAdmin = user.role === "ADMIN";
 
   const getDocumentTypeLabel = (type: string) => {
@@ -61,10 +99,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, users, documents }) => {
     return months[month - 1] || "Desconhecido";
   };
 
-  const getUserName = (userId: number) => {
-    const found = users.find((u) => u.id === userId);
-    return found?.name || "Usuário Desconhecido";
-  };
+  const getUserName = (userId: number) =>
+    users.find((u) => u.id === userId)?.name || "Usuário Desconhecido";
 
   if (isAdmin) {
     const currentMonth = new Date().getMonth() + 1;
@@ -87,7 +123,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, users, documents }) => {
       ).length,
     };
 
-    // Evita duplicatas: mesmo userId + type + mês/ano
     const uniqueRecentDocuments = documents.reduce((acc: Document[], doc) => {
       const exists = acc.find(
         (d) =>
@@ -118,80 +153,33 @@ const Dashboard: React.FC<DashboardProps> = ({ user, users, documents }) => {
 
         {/* Cards principais */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-blue-500">
-                  <Users className="text-white" size={24} />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-blue-600 font-medium">
-                    Total de Usuários
-                  </p>
-                  <h3 className="text-2xl font-bold text-blue-900">
-                    {users.length}
-                  </h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-green-500">
-                  <FileText className="text-white" size={24} />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-green-600 font-medium">
-                    Total de Documentos
-                  </p>
-                  <h3 className="text-2xl font-bold text-green-900">
-                    {documents.length}
-                  </h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-purple-500">
-                  <Calendar className="text-white" size={24} />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-purple-600 font-medium">
-                    Este Mês
-                  </p>
-                  <h3 className="text-2xl font-bold text-purple-900">
-                    {documentsThisMonth}
-                  </h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-orange-500">
-                  <TrendingUp className="text-white" size={24} />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm text-orange-600 font-medium">
-                    Este Ano
-                  </p>
-                  <h3 className="text-2xl font-bold text-orange-900">
-                    {documentsThisYear}
-                  </h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            label="Total de Usuários"
+            value={users.length}
+            icon={<Users size={24} />}
+            color="blue"
+          />
+          <StatCard
+            label="Total de Documentos"
+            value={documents.length}
+            icon={<FileText size={24} />}
+            color="green"
+          />
+          <StatCard
+            label="Este Mês"
+            value={documentsThisMonth}
+            icon={<Calendar size={24} />}
+            color="purple"
+          />
+          <StatCard
+            label="Este Ano"
+            value={documentsThisYear}
+            icon={<TrendingUp size={24} />}
+            color="orange"
+          />
         </div>
 
-        {/* Documentos por tipo e recentes */}
+        {/* Documentos por Tipo e Recentes */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card>
             <CardHeader>
@@ -282,57 +270,28 @@ const Dashboard: React.FC<DashboardProps> = ({ user, users, documents }) => {
           </Card>
         </div>
 
-        {/* Ações rápidas */}
+        {/* Ações Rápidas */}
         <Card className="mt-6">
           <CardHeader>
             <CardTitle>Ações Rápidas</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div
+              <QuickAction
+                label="Enviar Documentos"
+                icon={<Upload />}
                 onClick={() => navigate("/upload")}
-                className="p-4 border rounded-lg hover:border-[#38AFD9] hover:bg-[#38AFD9]/5 cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <Upload className="text-[#38AFD9]" size={20} />
-                  <div>
-                    <h3 className="font-medium">Enviar Documentos</h3>
-                    <p className="text-sm text-gray-600">
-                      Fazer upload de novos documentos
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div
+              />
+              <QuickAction
+                label="Gerenciar Usuários"
+                icon={<Users />}
                 onClick={() => navigate("/users")}
-                className="p-4 border rounded-lg hover:border-[#38AFD9] hover:bg-[#38AFD9]/5 cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <Users className="text-[#38AFD9]" size={20} />
-                  <div>
-                    <h3 className="font-medium">Gerenciar Usuários</h3>
-                    <p className="text-sm text-gray-600">
-                      Adicionar ou editar usuários
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div
+              />
+              <QuickAction
+                label="Relatórios"
+                icon={<BarChart3 />}
                 onClick={() => navigate("/settings")}
-                className="p-4 border rounded-lg hover:border-[#38AFD9] hover:bg-[#38AFD9]/5 cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <BarChart3 className="text-[#38AFD9]" size={20} />
-                  <div>
-                    <h3 className="font-medium">Relatórios</h3>
-                    <p className="text-sm text-gray-600">
-                      Visualizar estatísticas detalhadas
-                    </p>
-                  </div>
-                </div>
-              </div>
+              />
             </div>
           </CardContent>
         </Card>
@@ -340,15 +299,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, users, documents }) => {
     );
   }
 
-  // --- Painel do USUÁRIO COMUM ---
-  const userDocs = documents.filter((doc) => doc.userId === user.id);
+  // --- Painel do usuário comum ---
+  const userDocs = documents;
   const currentYearDocs = userDocs.filter(
     (doc) => doc.year === new Date().getFullYear()
   );
-  const latestDocument = userDocs.sort(
+  const latestDocument = [...userDocs].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   )[0];
-
   const getCount = (type: string) =>
     userDocs.filter((doc) => doc.type === type).length;
 
@@ -377,7 +335,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, users, documents }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Documentos Recentes */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Documentos Recentes</CardTitle>
@@ -418,7 +375,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, users, documents }) => {
           </CardContent>
         </Card>
 
-        {/* Resumo */}
         <Card>
           <CardHeader>
             <CardTitle>Resumo</CardTitle>
@@ -446,5 +402,57 @@ const Dashboard: React.FC<DashboardProps> = ({ user, users, documents }) => {
     </div>
   );
 };
+
+// Reutilizáveis
+const StatCard = ({
+  label,
+  value,
+  icon,
+  color,
+}: {
+  label: string;
+  value: number;
+  icon: JSX.Element;
+  color: string;
+}) => (
+  <Card
+    className={`bg-gradient-to-br from-${color}-50 to-${color}-100 border-${color}-200`}
+  >
+    <CardContent className="p-6">
+      <div className="flex items-center">
+        <div className={`p-3 rounded-full bg-${color}-500 text-white`}>
+          {icon}
+        </div>
+        <div className="ml-4">
+          <p className={`text-sm text-${color}-600 font-medium`}>{label}</p>
+          <h3 className={`text-2xl font-bold text-${color}-900`}>{value}</h3>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const QuickAction = ({
+  label,
+  icon,
+  onClick,
+}: {
+  label: string;
+  icon: JSX.Element;
+  onClick: () => void;
+}) => (
+  <div
+    onClick={onClick}
+    className="p-4 border rounded-lg hover:border-[#38AFD9] hover:bg-[#38AFD9]/5 cursor-pointer"
+  >
+    <div className="flex items-center gap-3">
+      {icon}
+      <div>
+        <h3 className="font-medium">{label}</h3>
+        <p className="text-sm text-gray-600">Clique para acessar</p>
+      </div>
+    </div>
+  </div>
+);
 
 export default Dashboard;
