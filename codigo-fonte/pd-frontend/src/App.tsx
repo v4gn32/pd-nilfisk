@@ -28,7 +28,7 @@ import Settings from "./pages/Settings";
 // Componentes
 import Sidebar from "./components/Sidebar";
 
-// Spinner simples (você pode trocar por componente visual customizado)
+// Spinner simples (você pode substituir por um componente customizado)
 const Spinner = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
     <div className="animate-spin rounded-full h-8 w-8 border-t-4 border-[#38AFD9]"></div>
@@ -37,8 +37,9 @@ const Spinner = () => (
 
 // Layout principal com Sidebar
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
 
+  if (isLoading) return <Spinner />;
   if (!user) return <Navigate to="/login" />;
 
   return (
@@ -60,57 +61,61 @@ const ProtectedRoute = ({
   const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) return <Spinner />;
-
   if (!isAuthenticated) return <Navigate to="/login" />;
   if (adminOnly && user?.role !== "ADMIN") return <Navigate to="/dashboard" />;
 
   return <AppLayout>{children}</AppLayout>;
 };
 
-// Rotas principais com dados reais
+// Rotas principais com carregamento de dados sincronizado
 const AppRoutes = () => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
-
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("token");
-        if (!token) return;
+        if (!token || !user) return;
 
         const headers = { Authorization: `Bearer ${token}` };
 
-        // Buscar documentos
+        // Documentos
         const docRes = await axios.get(
-          `${import.meta.env.VITE_API_URL}/documents/me`,
+          user.role === "ADMIN"
+            ? `${import.meta.env.VITE_API_URL}/documents`
+            : `${import.meta.env.VITE_API_URL}/documents/me`,
           { headers }
         );
-        if (isMounted) setDocuments(docRes.data);
+        setDocuments(docRes.data);
 
-        // Buscar usuários (admin)
-        const userRes = await axios.get(
-          `${import.meta.env.VITE_API_URL}/users`,
-          { headers }
-        );
-        if (isMounted) setUsers(userRes.data);
+        // Usuários (apenas admin)
+        if (user.role === "ADMIN") {
+          const userRes = await axios.get(
+            `${import.meta.env.VITE_API_URL}/users`,
+            { headers }
+          );
+          setUsers(userRes.data);
+        }
+
+        setLoadingData(false);
       } catch (err: any) {
         console.error("Erro ao buscar dados:", err);
-
-        if (axios.isAxiosError(err) && err.response?.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login"; // Redireciona forçadamente
-        }
+        localStorage.removeItem("token");
+        window.location.href = "/login";
       }
     };
 
-    fetchData();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
+
+  if (isLoading || loadingData) {
+    return <Spinner />;
+  }
 
   return (
     <Routes>
