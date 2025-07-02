@@ -1,5 +1,12 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  ReactNode,
+} from "react";
 
+// Tipos de configurações do usuário
 export interface UserSettings {
   theme: "light" | "dark";
   language: "pt-BR" | "en";
@@ -15,6 +22,7 @@ export interface UserSettingsContextType {
   resetSettings: () => void;
 }
 
+// Configuração padrão
 const defaultSettings: UserSettings = {
   theme: "light",
   language: "pt-BR",
@@ -24,12 +32,13 @@ const defaultSettings: UserSettings = {
   },
 };
 
-// ✅ Exportação explícita para uso externo (como no useUserSettings.ts)
+// Criação do contexto
 export const UserSettingsContext = createContext<
   UserSettingsContextType | undefined
 >(undefined);
 
-export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
+// Provider
+export const UserSettingsProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [settings, setSettings] = useState<UserSettings>(() => {
@@ -38,13 +47,14 @@ export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   });
 
   useEffect(() => {
+    // Salva as configurações no localStorage
     localStorage.setItem("userSettings", JSON.stringify(settings));
 
-    // Aplicar tema no <html>
+    // Aplica tema
     document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(settings.theme);
 
-    // Aplicar linguagem
+    // Aplica linguagem
     document.documentElement.lang = settings.language;
   }, [settings]);
 
@@ -70,4 +80,15 @@ export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       {children}
     </UserSettingsContext.Provider>
   );
+};
+
+// Hook personalizado
+export const useUserSettings = (): UserSettingsContextType => {
+  const context = useContext(UserSettingsContext);
+  if (!context) {
+    throw new Error(
+      "useUserSettings deve ser usado dentro de um UserSettingsProvider"
+    );
+  }
+  return context;
 };
