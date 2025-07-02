@@ -29,6 +29,11 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout }) => {
       <div className="mb-8">
         <h2 className="text-xl font-bold mb-1">Nilfisk</h2>
         <p className="text-sm text-gray-400">Portal de Documentos</p>
+
+        <div className="bg-white/10 rounded-md px-3 py-2">
+          <p className="text-sm font-semibold truncate">{user.name}</p>
+          <p className="text-xs text-white/70 truncate">{user.email}</p>
+        </div>
       </div>
 
       <nav className="space-y-2">
