@@ -139,7 +139,11 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
                 <Clock size={12} className="mr-1.5 flex-shrink-0" />
                 <span className="truncate">
                   Adicionado em{" "}
-                  {new Date(document.createdAt).toLocaleDateString("pt-BR")}
+                  {new Date(document.createdAt).toLocaleDateString("pt-BR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })}
                 </span>
               </div>
             </div>
