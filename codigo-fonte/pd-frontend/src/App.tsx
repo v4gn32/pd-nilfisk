@@ -108,10 +108,10 @@ const AppRoutes = () => {
       }
     };
 
-    if (user) {
+    if (!isLoading && user) {
       fetchData();
     }
-  }, [user]);
+  }, [user, isLoading]);
 
   if (isLoading || loadingData) {
     return <Spinner />;
