@@ -1,50 +1,55 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from "react";
 
-interface UserSettings {
-  theme: 'light' | 'dark';
-  language: 'pt-BR' | 'en';
+export interface UserSettings {
+  theme: "light" | "dark";
+  language: "pt-BR" | "en";
   notifications: {
     email: boolean;
     push: boolean;
   };
 }
 
-interface UserSettingsContextType {
+export interface UserSettingsContextType {
   settings: UserSettings;
   updateSettings: (newSettings: Partial<UserSettings>) => void;
   resetSettings: () => void;
 }
 
 const defaultSettings: UserSettings = {
-  theme: 'light',
-  language: 'pt-BR',
+  theme: "light",
+  language: "pt-BR",
   notifications: {
     email: true,
     push: false,
   },
 };
 
-const UserSettingsContext = createContext<UserSettingsContextType | undefined>(undefined);
+// ✅ Exportação explícita para uso externo (como no useUserSettings.ts)
+export const UserSettingsContext = createContext<
+  UserSettingsContextType | undefined
+>(undefined);
 
-export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [settings, setSettings] = useState<UserSettings>(() => {
-    const savedSettings = localStorage.getItem('userSettings');
+    const savedSettings = localStorage.getItem("userSettings");
     return savedSettings ? JSON.parse(savedSettings) : defaultSettings;
   });
 
   useEffect(() => {
-    localStorage.setItem('userSettings', JSON.stringify(settings));
-    
-    // Apply theme
-    document.documentElement.classList.remove('light', 'dark');
+    localStorage.setItem("userSettings", JSON.stringify(settings));
+
+    // Aplicar tema no <html>
+    document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(settings.theme);
-    
-    // Apply language
+
+    // Aplicar linguagem
     document.documentElement.lang = settings.language;
   }, [settings]);
 
   const updateSettings = (newSettings: Partial<UserSettings>) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       ...newSettings,
       notifications: {
@@ -59,16 +64,10 @@ export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   return (
-    <UserSettingsContext.Provider value={{ settings, updateSettings, resetSettings }}>
+    <UserSettingsContext.Provider
+      value={{ settings, updateSettings, resetSettings }}
+    >
       {children}
     </UserSettingsContext.Provider>
   );
-};
-
-export const useUserSettings = () => {
-  const context = useContext(UserSettingsContext);
-  if (context === undefined) {
-    throw new Error('useUserSettings must be used within a UserSettingsProvider');
-  }
-  return context;
 };
