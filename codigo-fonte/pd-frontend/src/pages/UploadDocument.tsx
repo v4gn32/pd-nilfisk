@@ -1,7 +1,6 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Upload, AlertCircle, CheckCircle2, FileText, X } from "lucide-react";
 import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
 import {
   Card,
   CardContent,
@@ -9,7 +8,6 @@ import {
   CardTitle,
 } from "../components/ui/Card";
 import { DocumentType, User } from "../types";
-import { processBulkPayslips } from "../utils/pdfProcessor";
 
 interface UploadDocumentProps {
   users: User[];
@@ -23,7 +21,6 @@ interface UploadDocumentProps {
 }
 
 const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
-  // Estados principais
   const [documentType, setDocumentType] = useState<DocumentType>("HOLERITE");
   const [userId, setUserId] = useState<number | "">("");
   const [month, setMonth] = useState<number | "">("");
@@ -37,8 +34,6 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
   const [dragCounter, setDragCounter] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Dados auxiliares
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
   const months = [
@@ -63,7 +58,10 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
     { value: "INFORME_RENDIMENTO", label: "Informe de Rendimentos" },
   ];
 
-  // Validação de arquivo
+  useEffect(() => {
+    setIsDragOver(dragCounter > 0);
+  }, [dragCounter]);
+
   const validateFile = (file: File): boolean => {
     if (file.type !== "application/pdf") {
       setError("Por favor, selecione apenas arquivos PDF");
@@ -83,29 +81,23 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
     }
   };
 
-  const handleDragEvents = useCallback(
-    (e: React.DragEvent, type: "enter" | "leave" | "over" | "drop") => {
-      e.preventDefault();
-      e.stopPropagation();
+  const handleDragEvents = (e: React.DragEvent, type: string) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-      if (type === "enter") setDragCounter((c) => c + 1);
-      if (type === "leave") setDragCounter((c) => c - 1);
-      if (type === "over") return;
-      if (type === "drop") {
-        setDragCounter(0);
-        setIsDragOver(false);
-        if (e.dataTransfer.files.length) {
-          handleFileChange(e.dataTransfer.files[0]);
-          e.dataTransfer.clearData();
-        }
-      } else {
-        setIsDragOver(e.dataTransfer.items.length > 0);
+    if (type === "enter") setDragCounter((c) => c + 1);
+    if (type === "leave") setDragCounter((c) => c - 1);
+    if (type === "drop") {
+      setDragCounter(0);
+      if (e.dataTransfer.files.length) {
+        handleFileChange(e.dataTransfer.files[0]);
+        e.dataTransfer.clearData();
       }
-    },
-    []
-  );
+    }
+  };
 
   const openFileDialog = () => fileInputRef.current?.click();
+
   const removeFile = () => {
     setFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -119,7 +111,6 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  // Submissão do formulário
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -135,73 +126,44 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
       setIsLoading(true);
 
       if (documentType === "HOLERITE") {
-        const processedPayslips = await processBulkPayslips(file);
-        let successCount = 0;
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("month", String(month));
+        formData.append("year", String(year));
 
-        for (const payslip of processedPayslips) {
-          const user = users.find(
-            (u) =>
-              u.name.toUpperCase() === payslip.name.toUpperCase() ||
-              u.name.toUpperCase().includes(payslip.name.toUpperCase()) ||
-              payslip.name.toUpperCase().includes(u.name.toUpperCase())
-          );
-
-          if (user) {
-            // ✅ Criar Blob seguro para evitar PDF corrompido
-            const payslipBlob = new Blob([payslip.pdfBytes], {
-              type: "application/pdf",
-            });
-            const payslipFile = new File(
-              [payslipBlob],
-              `holerite-${user.name}-${month}-${year}.pdf`,
-              { type: "application/pdf" }
-            );
-
-            await onUpload(
-              "HOLERITE",
-              payslipFile,
-              user.id,
-              Number(month),
-              year
-            );
-            successCount++;
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/documents/process-payslips`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            },
+            body: formData,
           }
-        }
+        );
 
-        setProcessedCount(successCount);
-        setSuccess(`${successCount} holerites processados com sucesso`);
+        if (!response.ok) throw new Error("Erro ao processar holerites");
+        const result = await response.json();
+        const qtd = parseInt(result.message?.match(/\d+/)?.[0] || "0");
+        setProcessedCount(qtd);
+        setSuccess(result.message || "Holerites processados com sucesso");
       } else {
-        // Enviar documento genérico
         await onUpload(documentType, file, Number(userId), Number(month), year);
         setSuccess("Documento enviado com sucesso");
-      }
-      setError(null);
-      setFile(null);
-      setDocumentType("HOLERITE");
-      setUserId("");
-      setMonth("");
-      setYear(currentYear);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      setIsDragOver(false);
-      setDragCounter(0);
-      setSuccess("Documento enviado com sucesso");
-      // Se for holerite, resetar contagem de processados
-      if (documentType === "HOLERITE") {
-        setProcessedCount(0);
-      } else {
-        setProcessedCount(1); // Para outros tipos, consideramos 1 documento enviado
+        setProcessedCount(1);
       }
 
-      // Resetar estado
+      // Reset
       setFile(null);
       setDocumentType("HOLERITE");
       setUserId("");
       setMonth("");
       setYear(currentYear);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      setDragCounter(0);
     } catch (err) {
-      setError("Falha ao enviar documento. Por favor, tente novamente.");
       console.error(err);
+      setError("Falha ao enviar documento. Por favor, tente novamente.");
     } finally {
       setIsLoading(false);
     }
@@ -217,7 +179,6 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
           <CardTitle>Enviar Documento do Funcionário</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Mensagens */}
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-start">
               <AlertCircle
@@ -236,15 +197,23 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
               <p className="text-sm text-green-700">{success}</p>
             </div>
           )}
+          {processedCount > 0 && (
+            <p className="text-sm text-gray-600 mt-1">
+              {processedCount} documento{processedCount > 1 ? "s" : ""}{" "}
+              processado{processedCount > 1 ? "s" : ""}
+            </p>
+          )}
 
-          {/* Formulário */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Tipo do Documento */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="docType"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Tipo de Documento
               </label>
               <select
+                id="docType"
                 value={documentType}
                 onChange={(e) =>
                   setDocumentType(e.target.value as DocumentType)
@@ -259,13 +228,16 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
               </select>
             </div>
 
-            {/* Funcionário */}
             {documentType !== "HOLERITE" && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="userId"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Funcionário
                 </label>
                 <select
+                  id="userId"
                   value={userId}
                   onChange={(e) =>
                     setUserId(e.target.value ? Number(e.target.value) : "")
@@ -282,13 +254,16 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
               </div>
             )}
 
-            {/* Mês e Ano */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="month"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Mês
                 </label>
                 <select
+                  id="month"
                   value={month}
                   onChange={(e) =>
                     setMonth(e.target.value ? Number(e.target.value) : "")
@@ -304,10 +279,14 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="year"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Ano
                 </label>
                 <select
+                  id="year"
                   value={year}
                   onChange={(e) => setYear(Number(e.target.value))}
                   className="w-full border p-2 rounded-md"
@@ -321,9 +300,11 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
               </div>
             </div>
 
-            {/* Upload de Arquivo */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="pdfFile"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Arquivo PDF
               </label>
               <div
@@ -335,7 +316,7 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
                 }`}
                 onDragEnter={(e) => handleDragEvents(e, "enter")}
                 onDragLeave={(e) => handleDragEvents(e, "leave")}
-                onDragOver={(e) => handleDragEvents(e, "over")}
+                onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => handleDragEvents(e, "drop")}
                 onClick={openFileDialog}
               >
@@ -361,11 +342,13 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
                       </p>
                     </div>
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         removeFile();
                       }}
                       className="text-red-500 hover:text-red-700"
+                      aria-label="Remover arquivo"
                     >
                       <X size={18} />
                     </button>
@@ -373,10 +356,12 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
                 )}
               </div>
               <input
+                id="pdfFile"
                 ref={fileInputRef}
                 type="file"
                 accept="application/pdf"
                 className="hidden"
+                aria-label="Selecionar arquivo PDF"
                 onChange={(e) => {
                   if (e.target.files && e.target.files[0])
                     handleFileChange(e.target.files[0]);
@@ -384,7 +369,6 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
               />
             </div>
 
-            {/* Botão */}
             <div className="mt-4">
               <Button
                 type="submit"
