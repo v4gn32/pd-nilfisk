@@ -2,15 +2,20 @@ export type User = {
   id: number;
   name: string;
   email: string;
-  role: 'ADMIN' | 'COMMON';
+  role: "ADMIN" | "COMMON";
 };
 
-export type DocumentType = 'HOLERITE' | 'FERIAS' | 'COMISSAO' | 'INFORME_RENDIMENTO';
+export type DocumentType =
+  | "HOLERITE"
+  | "FERIAS"
+  | "COMISSAO"
+  | "INFORME_RENDIMENTO";
 
 export type Document = {
   id: number;
   type: DocumentType;
   fileUrl: string;
+  filename: string;
   userId: number;
   month: number;
   year: number;

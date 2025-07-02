@@ -67,16 +67,16 @@ const ProtectedRoute = ({
   return <AppLayout>{children}</AppLayout>;
 };
 
-// Rotas principais com carregamento de dados sincronizado
 const AppRoutes = () => {
   const { user, isLoading } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
+  const [loadingData, setLoadingData] = useState(false); // começa como false!
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoadingData(true);
         const token = localStorage.getItem("token");
         if (!token || !user) return;
 
@@ -108,12 +108,14 @@ const AppRoutes = () => {
       }
     };
 
-    if (user) {
+    // Só busca dados se estiver logado e fora da rota pública "/"
+    if (!isLoading && user && window.location.pathname !== "/") {
       fetchData();
     }
-  }, [user]);
+  }, [user, isLoading]);
 
-  if (isLoading || loadingData) {
+  // Spinner apenas em rotas protegidas (não mostra na Home)
+  if ((isLoading || loadingData) && window.location.pathname !== "/") {
     return <Spinner />;
   }
 
