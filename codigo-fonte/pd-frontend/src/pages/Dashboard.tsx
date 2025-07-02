@@ -32,7 +32,8 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const profile = await api.get("/profile");
+        // 🔄 Corrigido o endpoint para refletir o backend real
+        const profile = await api.get("/auth/profile");
         setUser(profile.data);
 
         if (profile.data.role === "ADMIN") {
@@ -43,7 +44,7 @@ const Dashboard: React.FC = () => {
           setUsers(usersRes.data);
           setDocuments(documentsRes.data);
         } else {
-          const docsRes = await api.get("/documents");
+          const docsRes = await api.get("/documents/me");
           setDocuments(docsRes.data);
         }
       } catch (error) {
