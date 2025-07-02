@@ -1,19 +1,34 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FileSearch } from "lucide-react";
 import DocumentCard from "../components/DocumentCard";
 import DocumentFilter from "../components/DocumentFilter";
 import { Document, DocumentType } from "../types";
+import api from "../services/api";
 
-interface DocumentsProps {
-  documents: Document[];
-}
-
-const Documents: React.FC<DocumentsProps> = ({ documents }) => {
+const Documents: React.FC = () => {
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [filters, setFilters] = useState({
     type: "ALL" as DocumentType | "ALL",
     month: null as number | null,
     year: null as number | null,
   });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const response = await api.get("/documents/me");
+        setDocuments(response.data);
+      } catch (error) {
+        console.error("Erro ao buscar documentos:", error);
+        alert("Erro ao carregar documentos. Tente novamente.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDocuments();
+  }, []);
 
   const filterDocuments = (docs: Document[]) => {
     return docs.filter((doc) => {
@@ -28,7 +43,6 @@ const Documents: React.FC<DocumentsProps> = ({ documents }) => {
 
   const handleDownload = async (doc: Document) => {
     const token = localStorage.getItem("token");
-
     if (!token) {
       alert("Token de autenticação não encontrado");
       return;
@@ -71,6 +85,14 @@ const Documents: React.FC<DocumentsProps> = ({ documents }) => {
     }/view?token=${token}`;
     window.open(url, "_blank");
   };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <p className="text-gray-500">Carregando documentos...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
