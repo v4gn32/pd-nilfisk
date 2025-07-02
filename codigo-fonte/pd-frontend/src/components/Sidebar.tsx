@@ -1,17 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  Home,
+  LayoutDashboard,
   FileText,
   Upload,
   Users,
   Settings,
-  Sun,
-  Moon,
+  Menu,
+  X,
   LogOut,
 } from "lucide-react";
 import { User } from "../types";
-import { useTheme } from "../contexts/ThemeContext";
+import ThemeToggle from "./ui/ThemeToggle";
 
 interface SidebarProps {
   user: User;
@@ -20,114 +20,167 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ user, onLogout }) => {
   const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const isActive = (path: string) => location.pathname === path;
+  const isAdmin = user?.role === "ADMIN";
+
+  const navItems = [
+    {
+      name: "Painel",
+      path: "/dashboard",
+      icon: <LayoutDashboard size={20} />,
+      showFor: "all",
+    },
+    {
+      name: "Meus Documentos",
+      path: "/documents",
+      icon: <FileText size={20} />,
+      showFor: "user",
+    },
+    {
+      name: "Enviar Documentos",
+      path: "/upload",
+      icon: <Upload size={20} />,
+      showFor: "admin",
+    },
+    {
+      name: "Gerenciar Usuários",
+      path: "/users",
+      icon: <Users size={20} />,
+      showFor: "admin",
+    },
+    {
+      name: "Configurações",
+      path: "/settings",
+      icon: <Settings size={20} />,
+      showFor: "all",
+    },
+  ];
+
+  const filteredNavItems = navItems.filter(
+    (item) =>
+      item.showFor === "all" ||
+      (item.showFor === "admin" && isAdmin) ||
+      (item.showFor === "user" && !isAdmin)
+  );
+
+  const toggleCollapse = () => setCollapsed(!collapsed);
+  const toggleMobile = () => setMobileOpen(!mobileOpen);
 
   return (
-    <aside className="w-64 bg-[#28313F] text-white min-h-screen p-6 hidden md:block">
-      <div className="mb-8">
-        <h2 className="text-xl font-bold mb-1">Nilfisk</h2>
-        <p className="text-sm text-gray-400">Portal de Documentos</p>
+    <>
+      {/* Botão menu mobile */}
+      <button
+        className="fixed top-4 left-4 z-50 p-2 rounded-md bg-[#28313F] dark:bg-gray-800 text-white md:hidden"
+        onClick={toggleMobile}
+      >
+        <Menu size={24} />
+      </button>
 
-        <div className="bg-white/10 rounded-md px-3 py-2">
-          <p className="text-sm font-semibold truncate">{user.name}</p>
-          <p className="text-xs text-white/70 truncate">{user.email}</p>
+      {/* Overlay mobile */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      <div
+        className={`
+          fixed top-0 left-0 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white z-50
+          transition-all duration-300 ease-in-out
+          ${collapsed ? "w-20" : "w-64"}
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+        `}
+      >
+        {/* Fechar menu mobile */}
+        <button
+          className="absolute top-4 right-4 p-2 md:hidden text-gray-600 dark:text-gray-300"
+          onClick={() => setMobileOpen(false)}
+        >
+          <X size={24} />
+        </button>
+
+        {/* Logo */}
+        <div className="p-6 flex justify-center items-center border-b border-gray-200 dark:border-gray-700">
+          <div className="text-2xl font-bold whitespace-nowrap text-[#38AFD9]">
+            {!collapsed ? "Portal Nilfisk" : "PN"}
+          </div>
+        </div>
+
+        {/* Menu de navegação */}
+        <nav className="mt-6">
+          <ul className="space-y-2 px-4">
+            {filteredNavItems.map((item) => (
+              <li key={item.path}>
+                <Link
+                  to={item.path}
+                  className={`
+                    flex items-center p-3 rounded-md transition-colors
+                    ${
+                      location.pathname === item.path
+                        ? "bg-[#38AFD9]/20 text-[#38AFD9] dark:bg-[#38AFD9]/30"
+                        : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    }
+                  `}
+                >
+                  <span className="mr-3">{item.icon}</span>
+                  {!collapsed && <span>{item.name}</span>}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* Alternador de tema */}
+        <div className="px-4 mt-6">
+          <div
+            className={`flex ${
+              collapsed ? "justify-center" : "justify-between items-center"
+            }`}
+          >
+            {!collapsed && (
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Tema
+              </span>
+            )}
+            <ThemeToggle />
+          </div>
+        </div>
+
+        {/* Info usuário e logout */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700">
+          {!collapsed && user && (
+            <div className="mb-4 px-4 py-2">
+              <p className="text-sm font-medium truncate text-gray-900 dark:text-white">
+                {user.name}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {user.email}
+              </p>
+            </div>
+          )}
+
+          <button
+            onClick={onLogout}
+            className="flex items-center justify-center w-full p-3 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
+          >
+            <LogOut size={20} className="mr-3" />
+            {!collapsed && <span>Sair</span>}
+          </button>
+
+          {/* Collapse desktop */}
+          <button
+            className="hidden md:flex items-center justify-center w-full mt-4 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
+            onClick={toggleCollapse}
+          >
+            <Menu size={20} />
+          </button>
         </div>
       </div>
-
-      <nav className="space-y-2">
-        <SidebarLink
-          to="/dashboard"
-          icon={<Home size={18} />}
-          active={isActive("/dashboard")}
-        >
-          Início
-        </SidebarLink>
-
-        <SidebarLink
-          to="/documents"
-          icon={<FileText size={18} />}
-          active={isActive("/documents")}
-        >
-          Meus Documentos
-        </SidebarLink>
-
-        {user.role === "ADMIN" && (
-          <>
-            <SidebarLink
-              to="/upload"
-              icon={<Upload size={18} />}
-              active={isActive("/upload")}
-            >
-              Upload
-            </SidebarLink>
-
-            <SidebarLink
-              to="/users"
-              icon={<Users size={18} />}
-              active={isActive("/users")}
-            >
-              Usuários
-            </SidebarLink>
-
-            <SidebarLink
-              to="/settings"
-              icon={<Settings size={18} />}
-              active={isActive("/settings")}
-            >
-              Configurações
-            </SidebarLink>
-          </>
-        )}
-      </nav>
-
-      <div className="mt-10 space-y-4">
-        <button
-          onClick={toggleTheme}
-          className="flex items-center gap-2 text-sm text-white/80 hover:text-white transition"
-        >
-          {theme === "dark" ? (
-            <>
-              <Sun size={18} className="text-yellow-400" />
-              Tema Claro
-            </>
-          ) : (
-            <>
-              <Moon size={18} className="text-gray-300" />
-              Tema Escuro
-            </>
-          )}
-        </button>
-
-        <button
-          onClick={onLogout}
-          className="flex items-center gap-2 text-sm text-red-400 hover:text-red-200 transition"
-        >
-          <LogOut size={18} />
-          Sair
-        </button>
-      </div>
-    </aside>
+    </>
   );
 };
-
-const SidebarLink: React.FC<{
-  to: string;
-  icon: React.ReactNode;
-  active: boolean;
-  children: React.ReactNode;
-}> = ({ to, icon, active, children }) => (
-  <Link
-    to={to}
-    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition
-      ${
-        active ? "bg-white text-[#28313F]" : "hover:bg-white/10 text-white/80"
-      }`}
-  >
-    {icon}
-    {children}
-  </Link>
-);
 
 export default Sidebar;

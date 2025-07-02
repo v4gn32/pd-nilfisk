@@ -10,6 +10,7 @@ import axios from "axios";
 // Contextos
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { UserSettingsProvider } from "./contexts/UserSettingsContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 // Tipos
 import { Document, User } from "./types";
@@ -26,16 +27,22 @@ import Settings from "./pages/Settings";
 
 // Componentes
 import Sidebar from "./components/Sidebar";
-import { ThemeProvider } from "./contexts/ThemeContext";
 
-// Layout com Sidebar
+// Spinner simples (você pode trocar por componente visual customizado)
+const Spinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <div className="animate-spin rounded-full h-8 w-8 border-t-4 border-[#38AFD9]"></div>
+  </div>
+);
+
+// Layout principal com Sidebar
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { user, logout } = useAuth();
 
   if (!user) return <Navigate to="/login" />;
 
   return (
-    <div className="flex h-screen bg-[#EFF0F2]">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar user={user} onLogout={logout} />
       <div className="flex-1 ml-0 md:ml-64 overflow-auto">{children}</div>
     </div>
@@ -52,13 +59,7 @@ const ProtectedRoute = ({
 }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Carregando...
-      </div>
-    );
-  }
+  if (isLoading) return <Spinner />;
 
   if (!isAuthenticated) return <Navigate to="/login" />;
   if (adminOnly && user?.role !== "ADMIN") return <Navigate to="/dashboard" />;
@@ -66,49 +67,48 @@ const ProtectedRoute = ({
   return <AppLayout>{children}</AppLayout>;
 };
 
-// Conteúdo principal com rotas
+// Rotas principais com dados reais
 const AppRoutes = () => {
-  const { user, login, register } = useAuth();
+  const { user } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    const isMounted = { current: true };
+    let isMounted = true;
 
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        // Buscar documentos do usuário
-        const docResponse = await axios.get(
-          `${import.meta.env.VITE_API_URL}/documents/me`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (isMounted.current) setDocuments(docResponse.data);
+        const headers = { Authorization: `Bearer ${token}` };
 
-        // Buscar todos os usuários (somente se for ADMIN)
-        const userResponse = await axios.get(
-          `${import.meta.env.VITE_API_URL}/users`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+        // Buscar documentos
+        const docRes = await axios.get(
+          `${import.meta.env.VITE_API_URL}/documents/me`,
+          { headers }
         );
-        if (isMounted.current) setUsers(userResponse.data);
-      } catch (error) {
-        console.error("Erro ao buscar dados:", error);
+        if (isMounted) setDocuments(docRes.data);
+
+        // Buscar usuários (admin)
+        const userRes = await axios.get(
+          `${import.meta.env.VITE_API_URL}/users`,
+          { headers }
+        );
+        if (isMounted) setUsers(userRes.data);
+      } catch (err: any) {
+        console.error("Erro ao buscar dados:", err);
+
+        if (axios.isAxiosError(err) && err.response?.status === 401) {
+          localStorage.removeItem("token");
+          window.location.href = "/login"; // Redireciona forçadamente
+        }
       }
     };
 
     fetchData();
     return () => {
-      isMounted.current = false;
+      isMounted = false;
     };
   }, []);
 
@@ -118,24 +118,12 @@ const AppRoutes = () => {
 
       <Route
         path="/login"
-        element={
-          user ? (
-            <Navigate to="/dashboard" />
-          ) : (
-            <Login onLogin={login} isLoading={false} error={null} />
-          )
-        }
+        element={user ? <Navigate to="/dashboard" /> : <Login />}
       />
 
       <Route
         path="/register"
-        element={
-          user ? (
-            <Navigate to="/dashboard" />
-          ) : (
-            <Register onRegister={register} isLoading={false} error={null} />
-          )
-        }
+        element={user ? <Navigate to="/dashboard" /> : <Register />}
       />
 
       <Route
