@@ -14,7 +14,7 @@ import { User } from "../types";
 import ThemeToggle from "./ui/ThemeToggle";
 
 interface SidebarProps {
-  user: User;
+  user: User | null;
   onLogout: () => void;
 }
 

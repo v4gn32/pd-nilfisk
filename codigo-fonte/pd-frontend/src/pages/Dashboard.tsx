@@ -328,12 +328,108 @@ const Dashboard: React.FC<DashboardProps> = ({ user, users, documents }) => {
   }
 
   // Layout para usuário comum
+  const userDocs = documents.filter((doc) => doc.userId === user.id);
+  const currentYearDocs = userDocs.filter(
+    (doc) => doc.year === new Date().getFullYear()
+  );
+  const latestDocument = userDocs.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  )[0];
+
+  const getCount = (type: string) =>
+    userDocs.filter((doc) => doc.type === type).length;
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold text-[#28313F] mb-6">Painel</h1>
 
-      {/* ... layout do usuário comum aqui, como no modelo que você já criou ... */}
-      {/* Caso queira, posso gerar o bloco final do usuário comum novamente com os cards, documentos e resumo. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        {["HOLERITE", "FERIAS", "COMISSAO", "INFORME_RENDIMENTO"].map(
+          (type) => (
+            <Card key={type}>
+              <CardContent className="p-6 flex items-center">
+                <div className="p-3 rounded-full bg-gray-100">
+                  <FileText className="text-gray-600" size={24} />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-gray-500">
+                    {getDocumentTypeLabel(type)}
+                  </p>
+                  <h3 className="text-2xl font-bold">{getCount(type)}</h3>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Documentos Recentes */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Documentos Recentes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {userDocs.length > 0 ? (
+              <div className="space-y-4">
+                {userDocs.slice(0, 5).map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="flex items-center p-3 rounded-md hover:bg-gray-50"
+                  >
+                    <div className="p-2 rounded-md bg-gray-100 mr-4">
+                      <FileText className="text-blue-500" size={20} />
+                    </div>
+                    <div>
+                      <h4 className="font-medium">
+                        {getDocumentTypeLabel(doc.type)}
+                      </h4>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Calendar size={14} className="mr-1" />
+                        <span>
+                          {getMonthName(doc.month)} {doc.year}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="ml-auto text-xs text-gray-400">
+                      {new Date(doc.createdAt).toLocaleDateString("pt-BR")}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>Nenhum documento encontrado</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Resumo */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Resumo</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Total</span>
+              <span className="font-bold">{userDocs.length}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Este ano</span>
+              <span className="font-bold">{currentYearDocs.length}</span>
+            </div>
+            {latestDocument && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Último</span>
+                <span className="font-bold text-blue-600">
+                  {getDocumentTypeLabel(latestDocument.type)}
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
