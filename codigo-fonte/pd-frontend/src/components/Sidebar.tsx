@@ -74,6 +74,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout }) => {
       <button
         className="fixed top-4 left-4 z-50 p-2 rounded-md bg-[#28313F] dark:bg-gray-800 text-white md:hidden"
         onClick={toggleMobile}
+        aria-label="Abrir menu"
+        title="Abrir menu"
       >
         <Menu size={24} />
       </button>
@@ -83,6 +85,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout }) => {
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
           onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
         />
       )}
 
@@ -98,6 +101,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout }) => {
         <button
           className="absolute top-4 right-4 p-2 md:hidden text-gray-600 dark:text-gray-300"
           onClick={() => setMobileOpen(false)}
+          aria-label="Fechar menu"
+          title="Fechar menu"
         >
           <X size={24} />
         </button>
@@ -109,7 +114,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout }) => {
           </div>
         </div>
 
-        {/* Menu de navegação */}
+        {/* Navegação */}
         <nav className="mt-6">
           <ul className="space-y-2 px-4">
             {filteredNavItems.map((item) => (
@@ -124,6 +129,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout }) => {
                         : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
                     }
                   `}
+                  aria-label={item.name}
+                  title={item.name}
                 >
                   <span className="mr-3">{item.icon}</span>
                   {!collapsed && <span>{item.name}</span>}
@@ -165,6 +172,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout }) => {
           <button
             onClick={onLogout}
             className="flex items-center justify-center w-full p-3 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
+            aria-label="Sair"
+            title="Sair"
           >
             <LogOut size={20} className="mr-3" />
             {!collapsed && <span>Sair</span>}
@@ -174,6 +183,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout }) => {
           <button
             className="hidden md:flex items-center justify-center w-full mt-4 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
             onClick={toggleCollapse}
+            aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+            title={collapsed ? "Expandir menu" : "Recolher menu"}
           >
             <Menu size={20} />
           </button>
