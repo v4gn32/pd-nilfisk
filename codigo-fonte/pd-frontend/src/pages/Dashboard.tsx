@@ -61,6 +61,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, users, documents }) => {
     return months[month - 1] || "Desconhecido";
   };
 
+  const getUserName = (userId: number) => {
+    const found = users.find((u) => u.id === userId);
+    return found?.name || "Usuário Desconhecido";
+  };
+
   if (isAdmin) {
     const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
@@ -82,17 +87,25 @@ const Dashboard: React.FC<DashboardProps> = ({ user, users, documents }) => {
       ).length,
     };
 
-    const recentDocuments = [...documents]
+    // Evita duplicatas: mesmo userId + type + mês/ano
+    const uniqueRecentDocuments = documents.reduce((acc: Document[], doc) => {
+      const exists = acc.find(
+        (d) =>
+          d.userId === doc.userId &&
+          d.type === doc.type &&
+          d.month === doc.month &&
+          d.year === doc.year
+      );
+      if (!exists) acc.push(doc);
+      return acc;
+    }, []);
+
+    const recentDocuments = [...uniqueRecentDocuments]
       .sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
       .slice(0, 5);
-
-    const getUserName = (userId: number) => {
-      const found = users.find((u) => u.id === userId);
-      return found?.name || "Usuário Desconhecido";
-    };
 
     return (
       <div className="p-6">
@@ -327,7 +340,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, users, documents }) => {
     );
   }
 
-  // Layout para usuário comum
+  // --- Painel do USUÁRIO COMUM ---
   const userDocs = documents.filter((doc) => doc.userId === user.id);
   const currentYearDocs = userDocs.filter(
     (doc) => doc.year === new Date().getFullYear()
