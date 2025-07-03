@@ -132,7 +132,7 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
         formData.append("year", String(year));
 
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/documents/process-payslips`,
+          `${import.meta.env.VITE_API_URL}/documents/bulk-holerites`,
           {
             method: "POST",
             headers: {
