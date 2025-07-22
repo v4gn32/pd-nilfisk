@@ -15,6 +15,7 @@ app.use(
       "http://localhost:5173", // manter para testes locais
       "https://pd-nilfisk.onrender.com", // novo: liberar produção
       "https://pdnilfisk.com", // novo: liberar produção
+      "https://pdnilfisk-backend.onrender.com", // 🔥 backend sendo chamado
     ],
     credentials: true,
   })
