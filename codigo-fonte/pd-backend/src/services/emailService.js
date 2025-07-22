@@ -1,7 +1,7 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  host: "http://email-ssl.com.br",
+  host: "email-ssl.com.br",
   port: 465,
   secure: true, // true for 465, false for other ports
   auth: {
@@ -33,7 +33,7 @@ exports.sendNewDocumentEmail = async (to, name, type, month, year) => {
     <p>Um novo documento do tipo <strong>${type}</strong> foi adicionado ao seu portal para o mês <strong>${
       monthNames[month - 1]
     }/${year}</strong>.</p>
-    <p>Você pode acessá-lo diretamente no portal Nilfisk.</p>
+    <p>Você pode acessá-lo diretamente no portal Nilfisk. (pdnilfisk.com)</p>
     <br />
     <p>Atenciosamente,<br />Equipe Nilfisk</p>
   `;
