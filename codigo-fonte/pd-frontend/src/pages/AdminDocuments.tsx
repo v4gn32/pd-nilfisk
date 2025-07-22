@@ -134,7 +134,9 @@ const AdminDocuments: React.FC = () => {
   };
 
   const handleView = (doc: Document) => {
-    window.open(`/documents/${doc.id}/view`, "_blank");
+    const token = localStorage.getItem("token");
+    const url = `/documents/${doc.id}/view?token=${token}`;
+    window.open(url, "_blank");
   };
 
   const handleDelete = async (id: number) => {
