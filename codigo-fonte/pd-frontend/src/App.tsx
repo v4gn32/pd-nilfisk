@@ -1,4 +1,5 @@
-import React from "react";
+// src/App.tsx
+import React, { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -18,20 +19,25 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Documents from "./pages/Documents";
 import UploadPage from "./pages/UploadPage";
+import AdminDocuments from "./pages/AdminDocuments";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 
 // Componentes
 import Sidebar from "./components/Sidebar";
 
-// Spinner
+// Tipos e API
+import api from "./services/api";
+import { Document, User as UserType } from "./types";
+
+// Loader
 const Spinner = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
     <div className="animate-spin rounded-full h-8 w-8 border-t-4 border-[#38AFD9]"></div>
   </div>
 );
 
-// Layout principal com Sidebar
+// Layout com Sidebar
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { user, logout, isLoading } = useAuth();
 
@@ -46,7 +52,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Rota protegida
+// Rota protegida com controle de role
 const ProtectedRoute = ({
   children,
   adminOnly = false,
@@ -63,8 +69,49 @@ const ProtectedRoute = ({
   return <AppLayout>{children}</AppLayout>;
 };
 
+// Rotas principais da aplicação
 const AppRoutes = () => {
   const { user } = useAuth();
+
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [users, setUsers] = useState<UserType[]>([]);
+
+  // 🔄 Carregar documentos e usuários da API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [docsRes, usersRes] = await Promise.all([
+          api.get("/documents"),
+          api.get("/users"),
+        ]);
+        setDocuments(docsRes.data);
+        setUsers(usersRes.data);
+      } catch (err) {
+        console.error("Erro ao carregar dados:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // 📥 Função para download de documento
+  const handleDownloadDocument = async (doc: Document) => {
+    try {
+      const response = await api.get(`/documents/${doc.id}/download`, {
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", doc.name || "documento.pdf");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Erro ao baixar documento:", err);
+    }
+  };
 
   return (
     <Routes>
@@ -99,6 +146,22 @@ const AppRoutes = () => {
       />
 
       <Route
+        path="/admin-documents"
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminDocuments
+              documents={documents}
+              users={users}
+              onDeleteDocument={(id) =>
+                setDocuments((prev) => prev.filter((doc) => doc.id !== id))
+              }
+              onDownloadDocument={handleDownloadDocument}
+            />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/upload"
         element={
           <ProtectedRoute adminOnly>
@@ -125,12 +188,13 @@ const AppRoutes = () => {
         }
       />
 
+      {/* Rota para caminhos inválidos */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 };
 
-// App principal
+// App principal com provedores de contexto
 const App = () => (
   <ThemeProvider>
     <AuthProvider>

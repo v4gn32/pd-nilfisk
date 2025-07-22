@@ -35,11 +35,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       const response = await api.post("/auth/login", { email, password });
-      const { token } = response.data;
+      const { token, user } = response.data;
 
+      // Armazena token
       localStorage.setItem("token", token);
 
-      await fetchProfile(); // atualiza com dados do usuário
+      // Atualiza diretamente o user no estado
+      setAuthState({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
     } catch (error: unknown) {
       let msg = "Falha no login";
       if (
