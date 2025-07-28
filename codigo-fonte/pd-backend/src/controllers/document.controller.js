@@ -37,6 +37,7 @@ exports.uploadDocument = async (req, res) => {
     );
     const fileUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 
+    // ✅ Cria documento no banco
     const document = await prisma.document.create({
       data: {
         type,
@@ -47,6 +48,22 @@ exports.uploadDocument = async (req, res) => {
         userId: parseInt(userId),
       },
     });
+
+    // ✅ Busca dados do usuário para enviar e-mail
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(userId) },
+    });
+
+    // ✅ Envia e-mail de notificação
+    try {
+      await sendNewDocumentEmail(user.email, user.name, type, month, year);
+      console.log(`📧 E-mail enviado para ${user.email}`);
+    } catch (emailErr) {
+      console.warn(
+        `⚠️ Falha ao enviar e-mail para ${user.email}:`,
+        emailErr.message
+      );
+    }
 
     res
       .status(201)
