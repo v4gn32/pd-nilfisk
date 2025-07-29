@@ -161,9 +161,14 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
       setYear(currentYear);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setDragCounter(0);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Falha ao enviar documento. Por favor, tente novamente.");
+
+      if (err?.response?.status == 409 && err.response.data?.error) {
+        setError(err.response.data.error); // exibe: Já existe um documento com essas informações.
+      } else {
+        setError("Falha ao enviar documento. Por favor, tente novamente.");
+      }
     } finally {
       setIsLoading(false);
     }
