@@ -115,3 +115,23 @@ exports.deleteUser = async (req, res) => {
       .json({ message: "Erro interno ao excluir usuário." });
   }
 };
+
+// Resete de senha
+exports.resetPassword = async (req, res) => {
+  const userId = Number(req.params.id);
+  const novaSenha = "123456";
+
+  try {
+    const hashedPassword = await bcrypt.hash(novaSenha, 10);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    res.json({ message: "Senha redefinida com sucesso para 123456" });
+  } catch (error) {
+    console.error("Erro ao redefinir senha:", error);
+    res.status(500).json({ error: "Erro ao redefinir a senha" });
+  }
+};

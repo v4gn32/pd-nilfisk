@@ -117,3 +117,34 @@ exports.getProfile = async (req, res) => {
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
+
+
+
+// 🔐 Altera a senha do usuário autenticado
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    const userId = req.user.id;
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
+
+    const passwordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!passwordValid)
+      return res.status(401).json({ error: "Senha atual incorreta" });
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    return res.json({ message: "Senha alterada com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao alterar senha:", error);
+    return res.status(500).json({ error: "Erro interno ao alterar a senha" });
+  }
+};

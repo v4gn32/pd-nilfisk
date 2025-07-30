@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 
 const documentController = require("../controllers/document.controller");
-const authenticate = require("../middlewares/auth.middleware");
+const { authenticate, authorize } = require("../middlewares/auth.middleware");
 const isAdmin = require("../middlewares/isAdmin.middleware");
 
 // ✅ Usar armazenamento em memória (ideal para Render)

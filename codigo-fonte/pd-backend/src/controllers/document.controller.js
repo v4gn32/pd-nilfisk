@@ -19,38 +19,16 @@ const normalize = (str) =>
     .toUpperCase();
 
 /**
- * 📤 Upload de documento individual (com verificação de duplicata)
+ * 📤 Upload de documento individual
  */
 exports.uploadDocument = async (req, res) => {
   try {
     const { type, month, year, userId } = req.body;
-
-    // 🔒 Verifica se os dados obrigatórios foram enviados
     if (!req.file)
       return res.status(400).json({ error: "Arquivo não enviado" });
     if (!type || !month || !year || !userId)
       return res.status(400).json({ error: "Dados incompletos" });
 
-    const filename = req.file.originalname;
-
-    // 🔍 Verifica se o documento já existe no sistema para o mesmo usuário
-    const existing = await prisma.document.findFirst({
-      where: {
-        userId: parseInt(userId),
-        type,
-        month: parseInt(month),
-        year: parseInt(year),
-        filename,
-      },
-    });
-
-    if (existing) {
-      return res.status(409).json({
-        error: "Já existe um documento com essas informações.",
-      });
-    }
-
-    // ☁️ Faz upload do arquivo para o S3
     const buffer = req.file.buffer;
     const key = await uploadToS3(
       buffer,
@@ -59,11 +37,11 @@ exports.uploadDocument = async (req, res) => {
     );
     const fileUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 
-    // ✅ Cria o documento no banco de dados
+    // ✅ Cria documento no banco
     const document = await prisma.document.create({
       data: {
         type,
-        filename,
+        filename: req.file.originalname,
         url: fileUrl,
         month: parseInt(month),
         year: parseInt(year),
@@ -71,11 +49,12 @@ exports.uploadDocument = async (req, res) => {
       },
     });
 
-    // 📩 Busca dados do usuário e envia e-mail de notificação
+    // ✅ Busca dados do usuário para enviar e-mail
     const user = await prisma.user.findUnique({
       where: { id: parseInt(userId) },
     });
 
+    // ✅ Envia e-mail de notificação
     try {
       await sendNewDocumentEmail(user.email, user.name, type, month, year);
       console.log(`📧 E-mail enviado para ${user.email}`);
@@ -86,7 +65,6 @@ exports.uploadDocument = async (req, res) => {
       );
     }
 
-    // 📦 Retorna sucesso
     res
       .status(201)
       .json({ message: "Documento enviado com sucesso", document });
