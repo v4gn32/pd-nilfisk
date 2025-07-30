@@ -46,6 +46,7 @@ const AdminDocuments: React.FC = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 📥 Carrega documentos e usuários ao iniciar
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -64,6 +65,7 @@ const AdminDocuments: React.FC = () => {
     fetchData();
   }, []);
 
+  // 📑 Tipos de documentos
   const documentTypes = [
     { value: "ALL", label: "Todos os Documentos" },
     { value: "HOLERITE", label: "Holerites" },
@@ -72,6 +74,7 @@ const AdminDocuments: React.FC = () => {
     { value: "INFORME_RENDIMENTO", label: "Informes de Rendimentos" },
   ];
 
+  // 📆 Meses e anos
   const months = [
     { value: 1, label: "Janeiro" },
     { value: 2, label: "Fevereiro" },
@@ -86,10 +89,10 @@ const AdminDocuments: React.FC = () => {
     { value: 11, label: "Novembro" },
     { value: 12, label: "Dezembro" },
   ];
-
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
+  // 🔧 Helpers para exibição
   const getDocumentTypeLabel = (type: DocumentType) =>
     documentTypes.find((t) => t.value === type)?.label || "Documento";
 
@@ -113,6 +116,7 @@ const AdminDocuments: React.FC = () => {
     );
   };
 
+  // 🔍 Aplica os filtros selecionados
   const filterDocuments = (docs: Document[]) =>
     docs.filter((doc) => {
       if (filters.type !== "ALL" && doc.type !== filters.type) return false;
@@ -129,16 +133,40 @@ const AdminDocuments: React.FC = () => {
       return true;
     });
 
-  const handleDownload = (doc: Document) => {
-    window.open(`/documents/${doc.id}/download`, "_blank");
+  // 👁️ Visualiza documento no navegador com token no header
+  const handleView = async (doc: Document) => {
+    try {
+      const res = await api.get(`/documents/${doc.id}/view`, {
+        responseType: "blob",
+      });
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (error) {
+      console.error("Erro ao visualizar documento", error);
+    }
   };
 
-  const handleView = (doc: Document) => {
-    const token = localStorage.getItem("token");
-    const url = `/documents/${doc.id}/view?token=${token}`;
-    window.open(url, "_blank");
+  // 📥 Baixa documento com nome padrão
+  const handleDownload = async (doc: Document) => {
+    try {
+      const res = await api.get(`/documents/${doc.id}/download`, {
+        responseType: "blob",
+      });
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${doc.type}-${doc.month}-${doc.year}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Erro ao baixar documento", error);
+    }
   };
 
+  // 🗑️ Exclui documento com confirmação temporária
   const handleDelete = async (id: number) => {
     if (deleteConfirm === id) {
       try {
@@ -154,6 +182,7 @@ const AdminDocuments: React.FC = () => {
     }
   };
 
+  // 🧼 Atualiza filtros
   const handleFilterChange = (key: keyof FilterState, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
@@ -181,6 +210,7 @@ const AdminDocuments: React.FC = () => {
         Gerenciar Documentos
       </h1>
 
+      {/* 🔍 Filtro de busca e filtros avançados */}
       <Card className="mb-6 bg-white dark:bg-gray-800">
         <CardContent className="p-4">
           <div className="mb-4 relative">
@@ -208,7 +238,6 @@ const AdminDocuments: React.FC = () => {
                 </span>
               )}
             </div>
-
             <Button
               variant="ghost"
               size="sm"
@@ -229,7 +258,6 @@ const AdminDocuments: React.FC = () => {
 
           {showFilters && (
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Tipo */}
               <select
                 value={filters.type}
                 onChange={(e) => handleFilterChange("type", e.target.value)}
@@ -242,7 +270,6 @@ const AdminDocuments: React.FC = () => {
                 ))}
               </select>
 
-              {/* Usuário */}
               <select
                 value={filters.userId || ""}
                 onChange={(e) =>
@@ -261,7 +288,6 @@ const AdminDocuments: React.FC = () => {
                 ))}
               </select>
 
-              {/* Mês */}
               <select
                 value={filters.month || ""}
                 onChange={(e) =>
@@ -280,7 +306,6 @@ const AdminDocuments: React.FC = () => {
                 ))}
               </select>
 
-              {/* Ano */}
               <select
                 value={filters.year || ""}
                 onChange={(e) =>
@@ -303,6 +328,7 @@ const AdminDocuments: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* 📂 Lista de documentos */}
       <Card className="bg-white dark:bg-gray-800">
         <CardHeader>
           <CardTitle className="text-gray-900 dark:text-white">
