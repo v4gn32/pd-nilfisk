@@ -357,21 +357,29 @@ const AdminDocuments: React.FC = () => {
                   </div>
                   <div className="flex gap-2">
                     <Button
+                      type="button"
                       variant="ghost"
-                      onClick={() => handleView(doc)}
+                      onClick={() =>
+                        window.open(`/api/documents/${doc.id}/view`, "_blank")
+                      }
                       className="text-green-600"
                       title="Visualizar"
                     >
                       <Eye size={18} />
                     </Button>
+
                     <Button
+                      type="button" // 🔥 ESSA LINHA É A CHAVE!
                       variant="ghost"
-                      onClick={() => handleDownload(doc)}
+                      onClick={() =>
+                        (window.location.href = `/api/documents/${doc.id}/download`)
+                      }
                       className="text-blue-600"
                       title="Baixar"
                     >
                       <Download size={18} />
                     </Button>
+
                     <Button
                       variant="ghost"
                       onClick={() => handleDelete(doc.id)}

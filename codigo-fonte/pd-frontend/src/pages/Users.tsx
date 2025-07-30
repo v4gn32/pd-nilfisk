@@ -17,7 +17,7 @@ import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import { User } from "../types";
 
-// Fallback para localhost caso não esteja definida em produção
+// Fallback para localhost
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
 
 interface UserFormData {
@@ -141,6 +141,28 @@ const Users: React.FC = () => {
     }
   };
 
+  const handleResetPassword = async (user: User) => {
+    const confirmed = window.confirm(
+      `Deseja realmente redefinir a senha do usuário ${user.name} para "123456"?`
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`${API_URL}/users/${user.id}/reset-password`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Erro ao resetar senha");
+      alert(`Senha do usuário ${user.name} foi redefinida para "123456"`);
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao redefinir senha");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -243,7 +265,9 @@ const Users: React.FC = () => {
                               : "bg-gray-100 text-gray-700"
                           }`}
                         >
-                          {user.role === "ADMIN" ? "Administrador" : "Usuário"}
+                          {user.role === "ADMIN"
+                            ? "Administrador"
+                            : "Usuário"}
                         </span>
                       </p>
                     </div>
@@ -255,14 +279,25 @@ const Users: React.FC = () => {
                     size="sm"
                     onClick={() => handleOpenModal(user)}
                     className="text-gray-500 hover:text-[#28313F]"
+                    title="Editar usuário"
                   >
                     <Pencil size={18} />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
+                    onClick={() => handleResetPassword(user)}
+                    className="text-yellow-500 hover:text-yellow-600"
+                    title="Resetar senha"
+                  >
+                    🔑
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleDeleteUser(user)}
                     className="text-red-500 hover:text-red-700"
+                    title="Excluir usuário"
                   >
                     <Trash2 size={18} />
                   </Button>

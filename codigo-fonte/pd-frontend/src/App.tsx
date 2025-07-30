@@ -30,6 +30,10 @@ import Sidebar from "./components/Sidebar";
 import api from "./services/api";
 import { Document, User as UserType } from "./types";
 
+// Notificações modernas
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 // Loader
 const Spinner = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -47,12 +51,15 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar user={user} onLogout={logout} />
-      <div className="flex-1 ml-0 md:ml-64 overflow-auto">{children}</div>
+      <div className="flex-1 ml-0 md:ml-64 overflow-auto">
+        {children}
+        <ToastContainer position="top-right" autoClose={3000} />
+      </div>
     </div>
   );
 };
 
-// Rota protegida com controle de role
+// Rota protegida com controle de acesso
 const ProtectedRoute = ({
   children,
   adminOnly = false,
@@ -69,14 +76,12 @@ const ProtectedRoute = ({
   return <AppLayout>{children}</AppLayout>;
 };
 
-// Rotas principais da aplicação
+// Rotas da aplicação
 const AppRoutes = () => {
   const { user } = useAuth();
-
   const [documents, setDocuments] = useState<Document[]>([]);
   const [users, setUsers] = useState<UserType[]>([]);
 
-  // 🔄 Carregar documentos e usuários da API
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -94,7 +99,6 @@ const AppRoutes = () => {
     fetchData();
   }, []);
 
-  // 📥 Função para download de documento
   const handleDownloadDocument = async (doc: Document) => {
     try {
       const response = await api.get(`/documents/${doc.id}/download`, {
@@ -188,13 +192,12 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Rota para caminhos inválidos */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 };
 
-// App principal com provedores de contexto
+// App com provedores de contexto
 const App = () => (
   <ThemeProvider>
     <AuthProvider>
