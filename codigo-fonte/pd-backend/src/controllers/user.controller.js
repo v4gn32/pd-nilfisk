@@ -13,7 +13,16 @@ exports.createUser = async (req, res) => {
         .json({ error: "Dados obrigatórios não preenchidos" });
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    // 🔒 Verifica se o e-mail já existe (ignora maiúsculas/minúsculas)
+    const existing = await prisma.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: "insensitive",
+        },
+      },
+    });
+
     if (existing) {
       return res.status(409).json({ error: "Email já cadastrado" });
     }
@@ -93,7 +102,7 @@ exports.deleteUser = async (req, res) => {
         .json({ message: "Esse usuário não pode ser excluído." });
     }
 
-    // Verifica se o usuário tem documentos vinculados
+    // 👤 Verifica se o usuário tem documentos vinculados
     const hasDocuments = await prisma.document.findFirst({
       where: { userId: id },
     });
@@ -116,7 +125,7 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
-// Resete de senha
+// 🔐 Resete de senha
 exports.resetPassword = async (req, res) => {
   const userId = Number(req.params.id);
   const novaSenha = "123456";
