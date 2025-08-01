@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const https = require("https");
 
 const pdfParse = require("pdf-parse");
 const { PDFDocument } = require("pdf-lib");
@@ -225,16 +226,24 @@ exports.downloadDocument = async (req, res) => {
       return res.status(403).json({ error: "Acesso negado" });
     }
 
+    // Extrai a chave do S3 a partir da URL salva no banco
     const key = document.url.split("/").slice(3).join("/");
     const signedUrl = await generateSignedUrl(key);
 
-    return res.redirect(signedUrl);
+    // Faz o download do arquivo do S3 e envia direto para o frontend
+    https.get(signedUrl, (s3Response) => {
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${document.filename || "documento.pdf"}"`
+      );
+      res.setHeader("Content-Type", "application/pdf");
+      s3Response.pipe(res);
+    });
   } catch (error) {
     console.error("Erro ao fazer download:", error);
     res.status(500).json({ error: "Erro interno ao baixar o documento" });
   }
 };
-
 /* 🗑️ Exclusão de documento */
 exports.deleteDocument = async (req, res) => {
   try {
