@@ -141,20 +141,39 @@ const AdminDocuments: React.FC = () => {
 
   // 📥 Baixa documento com nome padrão
   const handleDownload = async (doc: Document) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Token de autenticação não encontrado");
+      return;
+    }
+
     try {
-      const res = await api.get(`/documents/${doc.id}/download`, {
-        responseType: "blob",
-      });
-      const blob = new Blob([res.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${doc.type}-${doc.month}-${doc.year}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/documents/${doc.id}/download`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Falha ao baixar documento");
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = doc.filename || "documento.pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
-      console.error("Erro ao baixar documento", error);
+      console.error("Erro ao baixar o documento:", error);
+      alert("Não foi possível baixar o documento. Tente novamente.");
     }
   };
 

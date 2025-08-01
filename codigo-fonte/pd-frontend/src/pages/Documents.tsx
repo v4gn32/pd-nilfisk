@@ -41,6 +41,7 @@ const Documents: React.FC = () => {
 
   const filteredDocuments = filterDocuments(documents);
 
+  // Função para baixar o documento
   const handleDownload = async (doc: Document) => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -55,14 +56,14 @@ const Documents: React.FC = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-          redirect: "follow",
         }
       );
 
-      const signedUrl = response.url;
+      if (!response.ok) {
+        throw new Error("Falha ao baixar documento");
+      }
 
-      const fileResponse = await fetch(signedUrl);
-      const blob = await fileResponse.blob();
+      const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
 
       const a = document.createElement("a");
@@ -70,7 +71,7 @@ const Documents: React.FC = () => {
       a.download = doc.filename || "documento.pdf";
       document.body.appendChild(a);
       a.click();
-      a.remove();
+      document.body.removeChild(a);
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       console.error("Erro ao baixar o documento:", error);
@@ -78,6 +79,7 @@ const Documents: React.FC = () => {
     }
   };
 
+  // Função para visualizar o documento
   const handleView = (doc: Document) => {
     const token = localStorage.getItem("token");
     const url = `${import.meta.env.VITE_API_URL}/documents/${
