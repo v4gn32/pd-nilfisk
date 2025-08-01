@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Eye,
   Search,
+  Eraser,
 } from "lucide-react";
 import {
   Card,
@@ -229,6 +230,24 @@ const AdminDocuments: React.FC = () => {
                 </span>
               )}
             </div>
+            {/* Botão de limpar filtros */}
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() =>
+                setFilters({
+                  type: "ALL",
+                  month: null,
+                  year: null,
+                  userId: null,
+                  searchTerm: "",
+                })
+              }
+              className="text-gray-600"
+              title="Limpar Filtros"
+            >
+              <Eraser size={18} />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
