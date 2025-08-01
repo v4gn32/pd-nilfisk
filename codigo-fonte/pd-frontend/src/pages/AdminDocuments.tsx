@@ -3,14 +3,10 @@ import {
   FileText,
   Trash2,
   Download,
-  Calendar,
-  Clock,
-  User,
   Filter,
   ChevronDown,
   AlertTriangle,
   Eye,
-  X,
   Search,
 } from "lucide-react";
 import {
@@ -134,17 +130,12 @@ const AdminDocuments: React.FC = () => {
     });
 
   // 👁️ Visualiza documento no navegador com token no header
-  const handleView = async (doc: Document) => {
-    try {
-      const res = await api.get(`/documents/${doc.id}/view`, {
-        responseType: "blob",
-      });
-      const blob = new Blob([res.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      window.open(url, "_blank");
-    } catch (error) {
-      console.error("Erro ao visualizar documento", error);
-    }
+  const handleView = (doc: Document) => {
+    const token = localStorage.getItem("token");
+    const url = `${import.meta.env.VITE_API_URL}/documents/${
+      doc.id
+    }/view?token=${token}`;
+    window.open(url, "_blank");
   };
 
   // 📥 Baixa documento com nome padrão
@@ -356,31 +347,31 @@ const AdminDocuments: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    {/* Botão de visualização */}
                     <Button
                       type="button"
                       variant="ghost"
-                      onClick={() =>
-                        window.open(`/api/documents/${doc.id}/view`, "_blank")
-                      }
+                      onClick={() => handleView(doc)}
                       className="text-green-600"
                       title="Visualizar"
                     >
                       <Eye size={18} />
                     </Button>
 
+                    {/* Botão de download */}
                     <Button
-                      type="button" // 🔥 ESSA LINHA É A CHAVE!
+                      type="button"
                       variant="ghost"
-                      onClick={() =>
-                        (window.location.href = `/api/documents/${doc.id}/download`)
-                      }
+                      onClick={() => handleDownload(doc)}
                       className="text-blue-600"
                       title="Baixar"
                     >
                       <Download size={18} />
                     </Button>
 
+                    {/* Botão de exclusão */}
                     <Button
+                      type="button"
                       variant="ghost"
                       onClick={() => handleDelete(doc.id)}
                       className="text-red-600"
