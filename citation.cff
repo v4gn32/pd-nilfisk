@@ -1,0 +1,36 @@
+message: Plataforma online destinada à avaliação colaborativa de objetos de aprendizagem.
+title: MRecursiva
+authors:
+  - family-names: Kumasaka
+    given-names: Evandro
+  - family-names: Cristiny Gonçalves Andrade
+    given-names: Gabrielly
+  - family-names: Gabriel Pereira da Silva
+    given-names: João
+  - family-names: Igor Araújo de Souza
+    given-names: Leonardo
+  - family-names: Souza Dias
+    given-names: Thiago
+  - family-names: de Oliveira Florencio
+    given-names: Vagner
+  - name-suffix: Professor
+    affiliation: PUC Minas
+    family-names: Azevedo Nigri do Carmo
+    given-names: Humberto
+  - name-suffix: Parceiro/Product Owner
+    family-names: Souza da Silva
+    given-names: Tamara
+keywords:
+  - "Projeto de Extensão"
+  - "Desenvolvimento Web"
+  - "Objetos de Aprendizagem"
+  - "Avaliação Colaborativa"
+  - "Educação"
+  - "Plataforma Online"
+  - "Fundamentação Pedagógica"
+  - "Tecnologia Educacional"
+  - "MRecursiva"
+  - "Desenvolvimento de um Sistema Sociotécnico"
+repository-code: https://github.com/ICEI-PUC-Minas-PMV-ADS/pmv-ads-2025-1-e5-proj-empext-t5-mrecursiva.git
+version: 1.0.0
+date-released: 2025-03-10
