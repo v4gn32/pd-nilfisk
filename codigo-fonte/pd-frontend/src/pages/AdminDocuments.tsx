@@ -85,6 +85,7 @@ const AdminDocuments: React.FC = () => {
     { value: 10, label: "Outubro" },
     { value: 11, label: "Novembro" },
     { value: 12, label: "Dezembro" },
+    { value: 13, label: "13º Salário" },
   ];
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => currentYear - i);

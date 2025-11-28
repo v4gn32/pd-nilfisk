@@ -49,6 +49,7 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ users, onUpload }) => {
     "Outubro",
     "Novembro",
     "Dezembro",
+    "13º Salário",
   ];
 
   const documentTypes: Array<{ value: DocumentType; label: string }> = [

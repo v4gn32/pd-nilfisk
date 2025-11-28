@@ -31,6 +31,15 @@ router.post(
   documentController.uploadBulkPayslips
 );
 
+// 🔍 DEBUG: Analisa PDF e mostra texto extraído (temporário)
+router.post(
+  "/debug-pdf",
+  authenticate,
+  isAdmin,
+  upload.single("file"),
+  documentController.debugPdfText
+);
+
 // 📄 Listar documentos do usuário logado
 router.get("/me", authenticate, documentController.getMyDocuments);
 

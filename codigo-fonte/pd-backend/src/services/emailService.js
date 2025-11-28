@@ -27,12 +27,15 @@ exports.sendNewDocumentEmail = async (to, name, type, month, year) => {
       "Dezembro",
     ];
 
+    // Formata o período (mês/ano ou 13º Salário)
+    const period = month === 13 
+      ? `13º Salário/${year}` 
+      : `${monthNames[month - 1]}/${year}`;
+
     const subject = `📄 Novo documento disponível: ${type}`;
     const html = `
     <p>Olá <strong>${name}</strong>,</p>
-    <p>Um novo documento do tipo <strong>${type}</strong> foi adicionado ao seu portal para o mês <strong>${
-      monthNames[month - 1]
-    }/${year}</strong>.</p>
+    <p>Um novo documento do tipo <strong>${type}</strong> foi adicionado ao seu portal para o mês <strong>${period}</strong>.</p>
     <p>Você pode acessá-lo diretamente no portal Nilfisk. (pdnilfisk.com)</p>
     <br />
     <p>Atenciosamente,<br />Equipe Nilfisk</p>

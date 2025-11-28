@@ -68,6 +68,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
       "Outubro",
       "Novembro",
       "Dezembro",
+      "13º Salário",
     ];
     return months[monthNumber - 1] || "Desconhecido";
   };
