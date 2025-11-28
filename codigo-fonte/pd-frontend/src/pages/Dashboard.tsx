@@ -96,6 +96,7 @@ const Dashboard: React.FC = () => {
       "Outubro",
       "Novembro",
       "Dezembro",
+      "13º Salário",
     ];
     return months[month - 1] || "Desconhecido";
   };

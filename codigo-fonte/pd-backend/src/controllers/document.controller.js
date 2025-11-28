@@ -100,12 +100,23 @@ exports.uploadBulkPayslips = async (req, res) => {
       const extracted = await pdfParse(Buffer.from(pdfBytes));
       const normalizedPageText = normalize(extracted.text || "");
 
-      const matchedUser = users.find((u) =>
-        normalizedPageText.includes(normalize(u.name))
-      );
+      // 🔍 Debug: mostra os primeiros 200 caracteres do texto extraído
+      console.log(`\n📄 Página ${i + 1} - Texto extraído (primeiros 200 chars):`);
+      console.log(normalizedPageText.substring(0, 200));
+      console.log(`\n👥 Buscando entre ${users.length} usuários cadastrados...`);
+
+      const matchedUser = users.find((u) => {
+        const normalizedUserName = normalize(u.name);
+        const found = normalizedPageText.includes(normalizedUserName);
+        if (found) {
+          console.log(`✅ MATCH encontrado: "${u.name}" (normalizado: "${normalizedUserName}")`);
+        }
+        return found;
+      });
 
       if (!matchedUser) {
         console.warn(`❌ Página ${i + 1} — nenhum colaborador encontrado`);
+        console.log(`Nomes cadastrados: ${users.map(u => normalize(u.name)).join(', ')}`);
         continue;
       }
 
@@ -267,6 +278,52 @@ exports.deleteDocument = async (req, res) => {
   } catch (error) {
     console.error("Erro ao excluir documento:", error);
     res.status(500).json({ error: "Erro interno ao excluir documento" });
+  }
+};
+
+/**
+ * 🔍 DEBUG: Analisa PDF e mostra texto extraído (temporário)
+ */
+exports.debugPdfText = async (req, res) => {
+  try {
+    if (!req.file)
+      return res.status(400).json({ error: "Arquivo PDF não enviado" });
+
+    const buffer = req.file.buffer;
+    const pdfDoc = await PDFDocument.load(buffer);
+    const totalPages = pdfDoc.getPageCount();
+    const users = await prisma.user.findMany();
+
+    const results = [];
+
+    for (let i = 0; i < totalPages; i++) {
+      const singleDoc = await PDFDocument.create();
+      const [page] = await singleDoc.copyPages(pdfDoc, [i]);
+      singleDoc.addPage(page);
+      const pdfBytes = await singleDoc.save();
+
+      const extracted = await pdfParse(Buffer.from(pdfBytes));
+      const normalizedPageText = normalize(extracted.text || "");
+
+      const matchedUser = users.find((u) =>
+        normalizedPageText.includes(normalize(u.name))
+      );
+
+      results.push({
+        page: i + 1,
+        textExtracted: normalizedPageText.substring(0, 500), // primeiros 500 chars
+        matchedUser: matchedUser ? matchedUser.name : null,
+        registeredUsers: users.map(u => normalize(u.name))
+      });
+    }
+
+    return res.json({
+      totalPages,
+      results
+    });
+  } catch (error) {
+    console.error("Erro ao analisar PDF:", error);
+    res.status(500).json({ error: "Erro ao analisar PDF" });
   }
 };
 
